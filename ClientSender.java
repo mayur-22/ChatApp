@@ -23,7 +23,7 @@ class ClientSender extends Thread{
 
 	//if b is true then it is receiver;
 	//else it is a sender
-	public ClientSender(Socket s){
+	public ClientSender(Socket s) throws Exception{
 		this.soc = s;
 		this.outToServer = new DataOutputStream(s.getOutputStream());
 		this.inFromServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -36,37 +36,41 @@ class ClientSender extends Thread{
 		Scanner sc = new Scanner(System.in);
 		while(true){
 
-			userStr = sc.nextLine();
+			try{
 
-			if(userStr.equals("UNREGISTER")){
+				userStr = sc.nextLine();
 
+				if(userStr.equals("UNREGISTER")){
+
+				}
+				
+				//new class will be made which will return username messege and boolean;
+				ParserS pr = new ParserS(userStr);
+
+
+				if(!pr.isValidInput()){
+					System.out.println("Type Again...");
+					continue;
+				}
+
+				String userToSend = pr.getUserName();
+				String message = pr.getMessage();
+
+				String toSend = "";
+				toSend += "SEND [" + userToSend + "]\n";
+				toSend += "Content-length: [" + message.length() + "]\n\n";
+				toSend += "[" + message + "]";
+
+				outToServer.writeBytes(toSend);
+				String receiveMsg[] = (inFromServer.readLine()).split(" ");
+				if(receiveMsg[0].equals("SENT"))
+					System.out.println("Message Sent Successfully");
+				else if (receiveMsg[1].equals("102"))
+					System.out.println("Unable to Send");
+				else if (receiveMsg[1].equals("103"))
+					System.out.println("Header Incomplete");
 			}
-			
-			//new class will be made which will return username messege and boolean;
-			ParserS pr = new ParserS(userStr);
-
-
-			if(!pr.isValidInput()){
-				System.out.println("Type Again...");
-				continue;
-			}
-
-			String userToSend = pr.getUserName();
-			String message = pr.getMessage();
-
-			String toSend = "";
-			toSend += "SEND [" + userToSend + "]\n";
-			toSend += "Content-length: [" + message.length() + "]\n\n";
-			toSend += "[" + message + "]";
-
-			outToServer.writeBytes(toSend);
-			String receiveMsg[] = (inFromServer.readLine()).split(" ");
-			if(receiveMsg[0].equals("SENT"))
-				System.out.println("Message Sent Successfully");
-			else if (receiveMsg[1].equals("102"))
-				System.out.println("Unable to Send");
-			else if (receiveMsg[1].equals("103"))
-				System.out.println("Header Incomplete");
+			catch(Exception e){e.printStackTrace();}
 
 		}
 
