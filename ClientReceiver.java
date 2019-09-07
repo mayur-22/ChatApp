@@ -1,4 +1,6 @@
-class ClientReceiver extends Thread throws Exception{
+import java.io.*;
+import java.net.*;
+class ClientReceiver extends Thread{
 
 	private Socket soc;
 	private DataOutputStream outToServer;
@@ -7,7 +9,7 @@ class ClientReceiver extends Thread throws Exception{
 
 	//if b is true then it is receiver;
 	//else it is a sender
-	public ClientSender(Socket s){
+	public ClientReceiver(Socket s){
 		this.soc = s;
 		this.outToServer = new DataOutputStream(s.getOutputStream());
 		this.inFromServer = new DataInputStream(s.getInputStream());
@@ -16,7 +18,7 @@ class ClientReceiver extends Thread throws Exception{
 	@Override
 	public void run(){
 		while(true){
-			int length = inFromServer.available()
+			int length = inFromServer.available();
 			byte[] buf = new byte[length];
 			inFromServer.readFully(buf);
 
@@ -31,14 +33,11 @@ class ClientReceiver extends Thread throws Exception{
 			else{
 				String ret = "RECEIVED ["+pr.getSenderName()+"]\n\n";
 				outToServer.writeBytes(ret);
-				System.out.println("New Message Received.\n Sender:"+this.getSenderName()
-					+"\nMessage: "+this.getMessage());
+				System.out.println("New Message Received.\n Sender:"+pr.getSenderName()
+					+"\nMessage: "+pr.getMessage());
 			}
 
 		}
-
-		//dont know about this
-		soc.close();
 	}
 }
 
@@ -60,13 +59,13 @@ class ParserR{
 		}
 
 		int msgLen = 0;
-		String tmp[] = msgs[1].split(" [",2)
+		String tmp[] = msgs[1].split(" [",2);
 		if(tmp[0].equals("Content-length:")){
 			msgLen = Integer.parseInt(tmp[1].substring(0,tmp[1].length()-1));
 		}
 
-		msgs[2] = msgs[2].substring(1,msgs[2].length()-1)
-		if(msgs[2].length==msgLen){
+		msgs[2] = msgs[2].substring(1,msgs[2].length()-1);
+		if(msgs[2].length()==msgLen){
 			this.message = msgs[2];
 			this.valid = true;
 		}
