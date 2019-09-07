@@ -43,20 +43,19 @@ class Client{
 		//registering for receiving
 		Socket receiveSocket = new Socket(serverIPAddress,2200);
 		String sendMsg = "REGISTER TOREC ["+username+"]\n\n";
-	 	DataOutputStream outToServer = new DataOutputStream(reveiveSocket.getOutputStream());
+	 	DataOutputStream outToServer = new DataOutputStream(receiveSocket.getOutputStream());
 	 	outToServer.writeBytes(sendMsg);
 
 	 	//now we have successfully registered
 	 	
-	 	//for sending
-	 	while(true){
-	 		Thread sen = new ClientSender(sendSocket);
-	 		Thread rec = new ClientReceiver(reveiveSocket);
-	 		sen.start();
-	 		rec.start();
-	 	}
+	 	
+ 		Thread sen = new ClientSender(sendSocket);
+ 		Thread rec = new ClientReceiver(receiveSocket);
+ 		sen.start();
+ 		rec.start();
 
-
+ 		sen.join();
+ 		
 	 	sendSocket.close();
 	 	receiveSocket.close();
 
