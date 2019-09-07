@@ -9,7 +9,7 @@ class ClientReceiver extends Thread{
 
 	//if b is true then it is receiver;
 	//else it is a sender
-	public ClientReceiver(Socket s){
+	public ClientReceiver(Socket s) throws Exception{
 		this.soc = s;
 		this.outToServer = new DataOutputStream(s.getOutputStream());
 		this.inFromServer = new DataInputStream(s.getInputStream());
@@ -18,24 +18,27 @@ class ClientReceiver extends Thread{
 	@Override
 	public void run(){
 		while(true){
-			int length = inFromServer.available();
-			byte[] buf = new byte[length];
-			inFromServer.readFully(buf);
+			try{
+				int length = inFromServer.available();
+				byte[] buf = new byte[length];
+				inFromServer.readFully(buf);
 
-			String inp = new String(buf);
+				String inp = new String(buf);
 
-			ParserR pr = new ParserR(inp);
+				ParserR pr = new ParserR(inp);
 
-			if(!pr.isValid()){
-				String ret = "ERROR 103 Header Incomplete\n\n";
-				outToServer.writeBytes(ret);
+				if(!pr.isValid()){
+					String ret = "ERROR 103 Header Incomplete\n\n";
+					outToServer.writeBytes(ret);
+				}
+				else{
+					String ret = "RECEIVED ["+pr.getSenderName()+"]\n\n";
+					outToServer.writeBytes(ret);
+					System.out.println("New Message Received.\n Sender:"+pr.getSenderName()
+						+"\nMessage: "+pr.getMessage());
+				}
 			}
-			else{
-				String ret = "RECEIVED ["+pr.getSenderName()+"]\n\n";
-				outToServer.writeBytes(ret);
-				System.out.println("New Message Received.\n Sender:"+pr.getSenderName()
-					+"\nMessage: "+pr.getMessage());
-			}
+			catch(Exception e){e.printStackTrace();}
 
 		}
 	}
