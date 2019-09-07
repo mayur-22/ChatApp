@@ -9,8 +9,12 @@
 
 */
 
+import java.io.*;
+import java.net.*;
+import java.util.Scanner;
 
-class ClientSender extends Thread throws Exception{
+
+class ClientSender extends Thread{
 
 	private Socket soc;
 	private DataOutputStream outToServer;
@@ -33,6 +37,10 @@ class ClientSender extends Thread throws Exception{
 		while(true){
 
 			userStr = sc.nextLine();
+
+			if(userStr.equals("UNREGISTER")){
+
+			}
 			
 			//new class will be made which will return username messege and boolean;
 			ParserS pr = new ParserS(userStr);
@@ -59,9 +67,8 @@ class ClientSender extends Thread throws Exception{
 				System.out.println("Unable to Send");
 			else if (receiveMsg[1].equals("103"))
 				System.out.println("Header Incomplete");
+
 		}
-		//closing 
-		soc.close();
 
 	}
 
@@ -76,7 +83,7 @@ class ParserS{
 	
 	//constructor class
 	public ParserS(String inp){
-		if(inp[0].equals('@') && inp[1].equals('[')){
+		if(inp.charAt(0)=='@' && inp.charAt(1)=='['){
 			this.recipientUserName = "";
 			this.message = "";
 			this.valid = false;
@@ -86,9 +93,9 @@ class ParserS{
 			int i=2;
 			this.recipientUserName = "";
 			for(i=2;i<inp.length();i++){
-				if(inp[i].equals(']'))
+				if(inp.charAt(i)==']')
 					break;
-				recipientUserName += inp[i];
+				recipientUserName += inp.charAt(i);
 			}
 
 			//no message body
@@ -103,13 +110,13 @@ class ParserS{
 			i += 2; //assuming space berween brackets
 			this.message = "";
 			while(i!=inp.length()){
-				if(inp[i].equals(']'))
+				if(inp.charAt(i)==']')
 					break;
-				message += inp[i];
+				message += inp.charAt(i);
 				i++;
 			}
 
-			if(!inp[inp.length()-1].equals(']')){
+			if(!(inp.charAt(inp.length()-1)==']')){
 				this.recipientUserName = "";
 				this.message = "";
 				this.valid = false;
