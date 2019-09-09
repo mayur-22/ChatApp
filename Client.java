@@ -11,7 +11,7 @@ class Client{
 
 	 	Scanner sc = new Scanner(System.in);
 	 	System.out.print("Enter IPAddress: ");
-	 	serverIPAddress = sc.nextLine();
+	 	serverIPAddress = "localhost";
 
 	 	//port number = 2200
 	 	Socket sendSocket = new Socket(serverIPAddress,2200);
@@ -19,7 +19,7 @@ class Client{
 
 	 	while(true){
 	 		System.out.print("Please Enter New UserName: ");
-	 		username = sc.nextLine();
+	 		username = "aca";
 
 	 		//output to server
 	 		String sendMsg = "REGISTER TOSEND ["+username+"]\n\n";
@@ -46,13 +46,14 @@ class Client{
 	 	DataOutputStream outToServer = new DataOutputStream(receiveSocket.getOutputStream());
 	 	outToServer.writeBytes(sendMsg);
 
+	 	
 	 	//now we have successfully registered
 	 	
 	 	
  		Thread sen = new ClientSender(sendSocket);
- 		Thread rec = new ClientReceiver(receiveSocket);
+ 		// Thread rec = new ClientReceiver(receiveSocket);
  		sen.start();
- 		rec.start();
+ 		// rec.start();
 
  		sen.join();
  		

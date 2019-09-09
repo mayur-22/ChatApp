@@ -55,6 +55,7 @@ class ClientSender extends Thread{
 
 				String userToSend = pr.getUserName();
 				String message = pr.getMessage();
+				System.out.println(message);
 
 				String toSend = "";
 				toSend += "SEND [" + userToSend + "]\n";
@@ -87,7 +88,7 @@ class ParserS{
 	
 	//constructor class
 	public ParserS(String inp){
-		if(inp.charAt(0)=='@' && inp.charAt(1)=='['){
+		if(!(inp.charAt(0)=='@' && inp.charAt(1)=='[')){
 			this.recipientUserName = "";
 			this.message = "";
 			this.valid = false;
@@ -111,7 +112,7 @@ class ParserS{
 			}
 
 			//assuming no extra special brakcets ]
-			i += 2; //assuming space berween brackets
+			i += 3; //assuming space berween brackets
 			this.message = "";
 			while(i!=inp.length()){
 				if(inp.charAt(i)==']')

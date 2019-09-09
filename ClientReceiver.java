@@ -56,13 +56,13 @@ class ParserR{
 		this.valid = false;
 
 		String msgs[] = inp.split("\n");
-		String temp[] = msgs[0].split(" [",2);
+		String temp[] = msgs[0].split("\\[",2);
 		if(temp[0].equals("FORWARD")){
 			this.senderUserName = temp[1].substring(0,temp[1].length()-1);
 		}
 
 		int msgLen = 0;
-		String tmp[] = msgs[1].split(" [",2);
+		String tmp[] = msgs[1].split("' '\\[",2);
 		if(tmp[0].equals("Content-length:")){
 			msgLen = Integer.parseInt(tmp[1].substring(0,tmp[1].length()-1));
 		}
