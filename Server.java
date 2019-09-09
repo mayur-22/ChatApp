@@ -2,15 +2,32 @@ import java.io.*;
 import java.net.*;
 import java.lang.*;
 import java.util.*;
+import java.util.stream.*;
 import java.util.concurrent.*;
 import java.security.*;
 
 class Server
 {
-    ConcurrentHashMap<String,Socket> ReceivingTable;
-    ConcurrentHashMap<String,Socket> SendingTable;
-    ConcurrentHashMap<String,PublicKey> KeyTable;
-    ArrayList<String> Registered;
+
+    public static void main(String[] args) throws Exception{
+        Server s = new Server();
+        s.runServer(0);
+    }
+    ConcurrentHashMap<String,Socket> receivingTable;
+    ConcurrentHashMap<String,Socket> sendingTable;
+    ConcurrentHashMap<String,PublicKey> keyTable;
+    ArrayList<String> registered;
+
+
+    public Server(){
+        receivingTable = new ConcurrentHashMap<String,Socket>();
+        sendingTable = new ConcurrentHashMap<String,Socket>();
+        keyTable = new ConcurrentHashMap<String,PublicKey>();
+        registered = new ArrayList<String>();
+
+    }
+
+
     class ServerSender implements Runnable
     {
         boolean success;
@@ -33,10 +50,11 @@ class Server
             outToClient = new DataOutputStream(sender.getOutputStream());
             
             boolean wellFormed = false;
-	    wellFormed = checkName(recMsg[1]);
+	    wellFormed = checkName(recMsg[2]);
 	    if(wellFormed)
             {
-	        if(Registered.contains(username))
+                username = recMsg[2].substring(1,recMsg[2].length()-1);
+	        if(registered.contains(username))
                 {
                     String retMsg = "ERROR 104 Already Registered\n\n";
                     outToClient.writeBytes(retMsg);
@@ -44,6 +62,7 @@ class Server
         	
 	        String retMsg = "REGISTERED TOSEND ["+username+"]\n\n";
 	        outToClient.writeBytes(retMsg);
+            success=true;
 	
 	    }
 	    else
@@ -81,7 +100,14 @@ class Server
           {
               try
               {
-                  String Message = inFromClient.readLine();
+                /*
+                  int length = inFromClient.available();
+                  byte[] buf = new byte[length];
+                  inFromClient.readFully(buf);
+                  String Message = new String(buf);
+                  System.out.println("Run: "+Message+Message.length+" "+le)*/
+                  String Message = inFromClient.lines().collect(Collectors.joining());
+                  
                   int mLength = checkHeader(Message);
                   if(mLength>=0)
                   {
@@ -98,9 +124,9 @@ class Server
                                   String res = "FORWARD ["+ username + "]\n" + splitted[2] + "\n\n";
                                   res = res + "["  + splitted[3].substring(a+1,b)+"]";
                                   
-                                  if(Registered.contains(destName))
+                                  if(registered.contains(destName))
                                   {                                      
-                                  Socket s = ReceivingTable.get(destName);
+                                  Socket s = receivingTable.get(destName);
                                   ServerReceiver recv = new ServerReceiver(s,destName,username,res);
                                   Thread t = new Thread(recv);
                                   t.start();
@@ -131,14 +157,15 @@ class Server
         
         private int checkHeader(String s)
         {
-            String[] splitLines = s.split("\n",2);
+            String[] splitLines = s.split("\n");
+            System.out.println("checkHeader: "+s);
             if (splitLines.length >=1)
             {
                 String[] firstline = splitLines[0].split("\\[");
                 if(firstline[0].equals("SEND "))
                 {
                     String names[] = firstline[1].split("']'");
-                    if(!Registered.contains((names[0])))
+                    if(!registered.contains((names[0])))
                         return -1;
                     
                 }
@@ -147,7 +174,7 @@ class Server
                 {
                     int a = splitLines[1].indexOf('[');
                     int b = splitLines[1].indexOf(']');
-                    if(b==splitLines[1].length())
+                    if(b==splitLines[1].length()-1)
                     {
                         String lng = splitLines[1].substring(a+1,b);
                         int length = Integer.parseInt(lng);
@@ -179,7 +206,7 @@ class Server
             success = false;
             if(recMsg.charAt(0)=='[' && recMsg.charAt(recMsg.length()-1)==']')
             {
-              if(Registered.contains(recMsg.substring(1, recMsg.length()-1)))
+              if(registered.contains(recMsg.substring(1, recMsg.length()-1)))
               {
                   socket = incoming;
                   success = true;
@@ -223,7 +250,7 @@ class Server
            String msg = inStream.readLine();
            if(msg.equals("RECEIVED ["+username+"]\n"))
            {
-               Socket s = SendingTable.get(sendname);
+               Socket s = sendingTable.get(sendname);
                DataOutputStream senderOut = new DataOutputStream(s.getOutputStream());
                senderOut.writeBytes("SENT ["+sendname+"]\n");
            }
@@ -244,9 +271,10 @@ class Server
         while(true)
         {
             Socket incoming = welcomeSocket.accept();
-            System.out.println("\nNew Scoket Created" + incoming.getPort());
+            System.out.println("\nNew Socket Created" + incoming.getPort());
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
 	    String recMsg[] = inFromClient.readLine().split(" ");
+        System.out.println(recMsg[1]);
             if(recMsg[1].equals("TOSEND"))
             {
                 ServerSender newSender = new ServerSender(incoming,recMsg);
@@ -255,8 +283,9 @@ class Server
                     
                     Thread t = new Thread(newSender);
                     t.start();
-                    Registered.add(newSender.username);
-                    SendingTable.put(newSender.username,newSender.sender);
+                    registered.add(newSender.username);
+                    sendingTable.put(newSender.username,newSender.sender);
+                    System.out.println("Registered"+newSender.username);
                 }
             }
             else if(recMsg[1].equals("TORECV"))
@@ -264,7 +293,7 @@ class Server
                 ServerReceiver  newReceiver = new ServerReceiver(incoming,recMsg[1]);
                 if(newReceiver.success)
                 {
-                    ReceivingTable.put(recMsg[1].substring(1,recMsg[1].length()-1),incoming);
+                    receivingTable.put(recMsg[1].substring(1,recMsg[1].length()-1),incoming);
                 }
             }
         }
