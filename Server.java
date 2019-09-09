@@ -103,6 +103,7 @@ class Server
               try
               {
                   String header = inFromClient.readLine();
+                  System.out.println(header);
                   int mLength = -1;
                   if(header.startsWith("SEND [") && header.endsWith("]"))
                   {
@@ -111,9 +112,11 @@ class Server
                           header = inFromClient.readLine();
                           if(header.startsWith("Content-length: [") && header.endsWith("]"))
                           {
+                           System.out.println(header);                              
                            try
                            {
-                            mLength = Integer. parseInt(header.substring(header.indexOf('['),header.indexOf(']')));
+                            mLength = Integer. parseInt(header.substring(header.indexOf('[')+1,header.indexOf(']')));
+                           
                            }
                            catch(NumberFormatException e)
                            {
@@ -123,13 +126,17 @@ class Server
                           }
                       }
                   }
-                  byte[] buf = new byte[mLength];
-                  inDataStream.readFully(buf);
-                  String Message = new String(buf);
+                  
+                  
                   if(mLength>=0)
                   {
+                      System.out.print(mLength);
+                      byte[] buf = new byte[mLength];                    
+                      inDataStream.read(buf,0,mLength);
+                      String Message = new String(buf);
+                      System.out.println(mLength);
+                      System.out.println(Message);
                       
-                      {
                               int a = Message.indexOf('[');
                               int b = Message.lastIndexOf(']');
                               if(b-a-1 == mLength)
@@ -137,7 +144,7 @@ class Server
                                   String destName = Message.substring(7,Message.length()-1);
                                   String res = "FORWARD ["+ username + "]\n" + Message + "\n\n";
                                   res = res + "["  + Message.substring(a+1,b)+"]";
-                                  
+                                  System.out.println(res);
                                   if(registered.contains(destName))
                                   {                                      
                                   Socket s = receivingTable.get(destName);
@@ -150,7 +157,7 @@ class Server
                               {
                                   outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
                               }
-                          }
+                          
                       
                   }
                   else
@@ -163,6 +170,7 @@ class Server
               catch(IOException e)
               {
                   System.out.println("Error receiving message from the port "+ sender.getPort());
+                  break;
               }
           }
         }
