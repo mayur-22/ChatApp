@@ -19,7 +19,11 @@ class Client{
 
 	 	while(true){
 	 		System.out.print("Please Enter New UserName: ");
-	 		username = "aca";
+	 		// username = "aca";
+	 		username = sc.nextLine();
+	 		// if(!username.equals("asa")){
+	 		// 	System.out.println("xx");
+	 		// 	username = "asa";}
 
 	 		//output to server
 	 		String sendMsg = "REGISTER TOSEND ["+username+"]\n\n";
@@ -42,7 +46,7 @@ class Client{
 
 		//registering for receiving
 		Socket receiveSocket = new Socket(serverIPAddress,2200);
-		String sendMsg = "REGISTER TOREC ["+username+"]\n\n";
+		String sendMsg = "REGISTER TORECV ["+username+"]\n\n";
 	 	DataOutputStream outToServer = new DataOutputStream(receiveSocket.getOutputStream());
 	 	outToServer.writeBytes(sendMsg);
 
@@ -51,9 +55,9 @@ class Client{
 	 	
 	 	
  		Thread sen = new ClientSender(sendSocket);
- 		// Thread rec = new ClientReceiver(receiveSocket);
+ 		Thread rec = new ClientReceiver(receiveSocket);
  		sen.start();
- 		// rec.start();
+ 		rec.start();
 
  		sen.join();
  		

@@ -61,7 +61,7 @@ class ClientSender extends Thread{
 				toSend += "SEND [" + userToSend + "]\n";
 				toSend += "Content-length: [" + message.length() + "]\n\n";
 				toSend += "[" + message + "]";
-
+				System.out.println("toSend "+toSend);
 				outToServer.writeBytes(toSend);
 				String receiveMsg[] = (inFromServer.readLine()).split(" ");
 				if(receiveMsg[0].equals("SENT"))

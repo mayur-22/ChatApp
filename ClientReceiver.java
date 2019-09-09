@@ -4,7 +4,7 @@ class ClientReceiver extends Thread{
 
 	private Socket soc;
 	private DataOutputStream outToServer;
-	private DataInputStream inFromServer;
+	private BufferedReader inFromServer;
 
 
 	//if b is true then it is receiver;
@@ -12,13 +12,70 @@ class ClientReceiver extends Thread{
 	public ClientReceiver(Socket s) throws Exception{
 		this.soc = s;
 		this.outToServer = new DataOutputStream(s.getOutputStream());
-		this.inFromServer = new DataInputStream(s.getInputStream());
+		this.inFromServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
+
 	}
 
 	@Override
 	public void run(){
 		while(true){
 			try{
+               	
+               	String header = inFromServer.readLine();
+               	int mLength = -1;
+               	String senderUserName = "";
+               	if(header.startsWith("FORWARD [") && header.endsWith("]"))
+               	{
+               		senderUserName = header.substring(10,header.length()-2);
+               		System.out.println("senderUserName: "+senderUserName);
+
+               		header = inFromServer.readLine();
+                    if(header.startsWith("Content-length: [") && header.endsWith("]"))
+                   	{
+                   		System.out.println(header);                              
+                           try{
+                           	mLength = Integer. parseInt(header.substring(header.indexOf('[')+1,header.indexOf(']')));
+                           
+                           }
+                           catch(NumberFormatException e)
+                           {
+                               System.out.println("Length Field Error \n");
+                               System.out.println(e.getMessage());
+                           }
+
+                   	}	
+               	}
+               	else{
+					String ret = "ERROR 103 Header Incomplete\n\n";
+					outToServer.writeBytes(ret);
+               	}
+
+               	if(mLength>=0)
+                {
+		            mLength = mLength + mLength;  
+		            char[] buf = new char[mLength];                    
+		            inFromServer.read(buf,0,mLength);
+		            String message = new String(buf);
+		            System.out.println(message);
+		            mLength = mLength/2;
+		            int a = message.indexOf('[');
+                    int b = message.lastIndexOf(']');
+                    if(b-a-1 == mLength)
+                    {
+                    	message = message.substring(1,message.length()-2);
+                    	String ret = "RECEIVED ["+senderUserName+"]n\n\n";
+						outToServer.writeBytes(ret);
+						System.out.println("New Message Received.\n Sender:"+senderUserName
+						+"\nMessage: "+message);
+
+                    }
+                }
+                else{
+                	String ret = "ERROR 103 Header Incomplete\n\n";
+					outToServer.writeBytes(ret);
+                }
+
+				/*
 				int length = inFromServer.available();
 				byte[] buf = new byte[length];
 				inFromServer.readFully(buf);
@@ -36,7 +93,9 @@ class ClientReceiver extends Thread{
 					outToServer.writeBytes(ret);
 					System.out.println("New Message Received.\n Sender:"+pr.getSenderName()
 						+"\nMessage: "+pr.getMessage());
-				}
+				}*/
+
+
 			}
 			catch(Exception e){e.printStackTrace();}
 

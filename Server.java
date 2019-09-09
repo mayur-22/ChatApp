@@ -52,26 +52,26 @@ class Server
             inDataStream = new DataInputStream(sender.getInputStream());
             
             boolean wellFormed = false;
-	    wellFormed = checkName(recMsg[2]);
-	    if(wellFormed)
+        wellFormed = checkName(recMsg[2]);
+        if(wellFormed)
             {
                 username = recMsg[2].substring(1,recMsg[2].length()-1);
-	        if(registered.contains(username))
+            if(registered.contains(username))
                 {
                     String retMsg = "ERROR 104 Already Registered\n\n";
                     outToClient.writeBytes(retMsg);
                 }
-        	
-	        String retMsg = "REGISTERED TOSEND ["+username+"]\n\n";
-	        outToClient.writeBytes(retMsg);
+            
+            String retMsg = "REGISTERED TOSEND ["+username+"]\n\n";
+            outToClient.writeBytes(retMsg);
             success=true;
-	
-	    }
-	    else
+    
+        }
+        else
             {
-	        String retMsg = "ERROR 100 Malformed username\n\n";
-		outToClient.writeBytes(retMsg);
-	    }
+            String retMsg = "ERROR 100 Malformed username\n\n";
+        outToClient.writeBytes(retMsg);
+        }
            
             }catch(IOException e)
             {
@@ -103,7 +103,7 @@ class Server
               try
               {
                   String header = inFromClient.readLine();
-                  System.out.println(header);
+                  System.out.println("ServerSender: "+header);
                   int mLength = -1;
                   if(header.startsWith("SEND [") && header.endsWith("]"))
                   {
@@ -130,23 +130,22 @@ class Server
                   
                   if(mLength>=0)
                   {
-                      System.out.print(mLength);
-                      byte[] buf = new byte[mLength];                    
-                      inDataStream.read(buf,0,mLength);
+                      mLength = mLength + mLength;  
+                      char[] buf = new char[mLength];                    
+                      inFromClient.read(buf,0,mLength);
                       String Message = new String(buf);
-                      System.out.println(mLength);
-                      System.out.println(Message);
+                      System.out.print(Message);
+                      mLength = mLength/2;
                       
                               int a = Message.indexOf('[');
                               int b = Message.lastIndexOf(']');
                               if(b-a-1 == mLength)
                               {
-                                  String destName = Message.substring(7,Message.length()-1);
+                                  String destName = header.substring(7,header.length()-1);
                                   String res = "FORWARD ["+ username + "]\n" + Message + "\n\n";
                                   res = res + "["  + Message.substring(a+1,b)+"]";
-                                  System.out.println(res);
                                   if(registered.contains(destName))
-                                  {                                      
+                                  {                                    
                                   Socket s = receivingTable.get(destName);
                                   ServerReceiver recv = new ServerReceiver(s,destName,username,res);
                                   Thread t = new Thread(recv);
@@ -226,6 +225,7 @@ class Server
             success = false;
             if(recMsg.charAt(0)=='[' && recMsg.charAt(recMsg.length()-1)==']')
             {
+                System.out.println("size: "+registered.size());  
               if(registered.contains(recMsg.substring(1, recMsg.length()-1)))
               {
                   socket = incoming;
@@ -291,9 +291,9 @@ class Server
         while(true)
         {
             Socket incoming = welcomeSocket.accept();
-            System.out.println("\nNew Socket Created" + incoming.getPort());
+            System.out.println("New Socket Created:" + incoming.getPort());
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
-	    String recMsg[] = inFromClient.readLine().split(" ");
+        String recMsg[] = inFromClient.readLine().split(" ");
         System.out.println(recMsg[1]);
             if(recMsg[1].equals("TOSEND"))
             {
@@ -305,18 +305,19 @@ class Server
                     t.start();
                     registered.add(newSender.username);
                     sendingTable.put(newSender.username,newSender.sender);
-                    System.out.println("Registered"+newSender.username);
+                    System.out.println("Registered: "+newSender.username);
                 }
             }
             else if(recMsg[1].equals("TORECV"))
             {
-                ServerReceiver  newReceiver = new ServerReceiver(incoming,recMsg[1]);
+                ServerReceiver  newReceiver = new ServerReceiver(incoming,recMsg[2]);
                 if(newReceiver.success)
                 {
+                    System.out.println("success");
                     receivingTable.put(recMsg[1].substring(1,recMsg[1].length()-1),incoming);
                 }
             }
         }
         
     }
-}	
+}   
