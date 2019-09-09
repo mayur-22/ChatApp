@@ -20,10 +20,10 @@ class Server
 
 
     public Server(){
-        receivingTable = new ConcurrentHashMap<String,Socket>();
-        sendingTable = new ConcurrentHashMap<String,Socket>();
-        keyTable = new ConcurrentHashMap<String,PublicKey>();
-        registered = new ArrayList<String>();
+        receivingTable = new ConcurrentHashMap<>();
+        sendingTable = new ConcurrentHashMap<>();
+        keyTable = new ConcurrentHashMap<>();
+        registered = new ArrayList<>();
 
     }
 
@@ -34,6 +34,7 @@ class Server
         Socket sender;
         BufferedReader inFromClient ;
         DataOutputStream outToClient;
+        DataInputStream inDataStream;
         String username;
         
         public String getName()
@@ -48,6 +49,7 @@ class Server
             {
             inFromClient = new BufferedReader(new InputStreamReader(sender.getInputStream()));
             outToClient = new DataOutputStream(sender.getOutputStream());
+            inDataStream = new DataInputStream(sender.getInputStream());
             
             boolean wellFormed = false;
 	    wellFormed = checkName(recMsg[2]);
@@ -100,29 +102,41 @@ class Server
           {
               try
               {
-                /*
-                  int length = inFromClient.available();
-                  byte[] buf = new byte[length];
-                  inFromClient.readFully(buf);
+                  String header = inFromClient.readLine();
+                  int mLength = -1;
+                  if(header.startsWith("SEND [") && header.endsWith("]"))
+                  {
+                      if(registered.contains(header.substring(6,header.length()-1)))
+                      {
+                          header = inFromClient.readLine();
+                          if(header.startsWith("Content-length: [") && header.endsWith("]"))
+                          {
+                           try
+                           {
+                            mLength = Integer. parseInt(header.substring(header.indexOf('['),header.indexOf(']')));
+                           }
+                           catch(NumberFormatException e)
+                           {
+                               System.out.println("Length Field Error \n");
+                               System.out.println(e.getMessage());
+                           }
+                          }
+                      }
+                  }
+                  byte[] buf = new byte[mLength];
+                  inDataStream.readFully(buf);
                   String Message = new String(buf);
-                  System.out.println("Run: "+Message+Message.length+" "+le)*/
-                  String Message = inFromClient.lines().collect(Collectors.joining());
-                  
-                  int mLength = checkHeader(Message);
                   if(mLength>=0)
                   {
-                      String[] splitted = Message.split("\n");
-                      if(splitted.length>=4)
+                      
                       {
-                          if((splitted[3].startsWith("[")) && splitted[3].endsWith("]"))
-                          {
-                              int a = splitted[3].indexOf('[');
-                              int b = splitted[3].lastIndexOf(']');
+                              int a = Message.indexOf('[');
+                              int b = Message.lastIndexOf(']');
                               if(b-a-1 == mLength)
                               {
-                                  String destName = splitted[1].substring(7,splitted[1].length()-1);
-                                  String res = "FORWARD ["+ username + "]\n" + splitted[2] + "\n\n";
-                                  res = res + "["  + splitted[3].substring(a+1,b)+"]";
+                                  String destName = Message.substring(7,Message.length()-1);
+                                  String res = "FORWARD ["+ username + "]\n" + Message + "\n\n";
+                                  res = res + "["  + Message.substring(a+1,b)+"]";
                                   
                                   if(registered.contains(destName))
                                   {                                      
@@ -137,9 +151,7 @@ class Server
                                   outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
                               }
                           }
-                      }
-                      else
-                          outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
+                      
                   }
                   else
                   {
