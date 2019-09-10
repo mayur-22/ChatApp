@@ -63,7 +63,9 @@ class ClientSender extends Thread{
 				toSend += "[" + message + "]";
 				System.out.println("toSend "+toSend);
 				outToServer.writeBytes(toSend);
-				String receiveMsg[] = (inFromServer.readLine()).split(" ");
+                                String ack = inFromServer.readLine();
+                                System.out.println("1" + ack);
+				String receiveMsg[] = ack.split(" ");
 				if(receiveMsg[0].equals("SENT"))
 					System.out.println("Message Sent Successfully");
 				else if (receiveMsg[1].equals("102"))
@@ -71,7 +73,8 @@ class ClientSender extends Thread{
 				else if (receiveMsg[1].equals("103"))
 					System.out.println("Header Incomplete");
 			}
-			catch(Exception e){e.printStackTrace();}
+			catch(Exception e){e.printStackTrace();
+                        return;}
 
 		}
 

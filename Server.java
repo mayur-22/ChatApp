@@ -105,10 +105,13 @@ class Server
                   String header = inFromClient.readLine();
                   System.out.println("ServerSender: "+header);
                   int mLength = -1;
+                  String destName = "";
                   if(header.startsWith("SEND [") && header.endsWith("]"))
                   {
+                      destName = header.substring(6,header.length()-1);
                       if(registered.contains(header.substring(6,header.length()-1)))
                       {
+                          
                           header = inFromClient.readLine();
                           if(header.startsWith("Content-length: [") && header.endsWith("]"))
                           {
@@ -141,12 +144,14 @@ class Server
                               int b = Message.lastIndexOf(']');
                               if(b-a-1 == mLength)
                               {
-                                  String destName = header.substring(7,header.length()-1);
-                                  String res = "FORWARD ["+ username + "]\n" + Message + "\n\n";
+                                  
+                                  String res = "FORWARD ["+ username + "]\nContent-length: ["+mLength+"]\n\n";
                                   res = res + "["  + Message.substring(a+1,b)+"]";
                                   if(registered.contains(destName))
                                   {                                    
                                   Socket s = receivingTable.get(destName);
+                                  System.out.println(destName + " " + s.getPort() + " " +res);
+                                  
                                   ServerReceiver recv = new ServerReceiver(s,destName,username,res);
                                   Thread t = new Thread(recv);
                                   t.start();
@@ -161,7 +166,7 @@ class Server
                   }
                   else
                   {
-                      outToClient.writeBytes("ERROR 103 Header incomplete\\n\n");
+                      outToClient.writeBytes("ERROR 103 Header incomplete\n\n");
                   }
                   
               
@@ -245,12 +250,13 @@ class Server
             }   
   
         }
-        public ServerReceiver(Socket incoming,String thisname, String othername,String messgae)
+        public ServerReceiver(Socket incoming,String thisname, String othername,String sendmessage)
         {
             success = true;
             socket = incoming;
             username = thisname;
             sendname = othername;
+            this.message = sendmessage;
             try
             {
                 inStream = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
@@ -267,12 +273,16 @@ class Server
           try
           {
            outStream.writeBytes(message);
+           System.out.println(message);
            String msg = inStream.readLine();
-           if(msg.equals("RECEIVED ["+username+"]\n"))
+           System.out.println(msg);
+           if(msg.startsWith("RECEIVED ["+sendname+"]"))
            {
                Socket s = sendingTable.get(sendname);
                DataOutputStream senderOut = new DataOutputStream(s.getOutputStream());
-               senderOut.writeBytes("SENT ["+sendname+"]\n");
+               System.out.println(s.getPort());
+               senderOut.writeBytes("SENT ["+username+"]\n");
+               System.out.println("Sent");
            }
           }
           catch(IOException e)
@@ -314,7 +324,9 @@ class Server
                 if(newReceiver.success)
                 {
                     System.out.println("success");
-                    receivingTable.put(recMsg[1].substring(1,recMsg[1].length()-1),incoming);
+                    receivingTable.put(recMsg[2].substring(1,recMsg[2].length()-1),incoming);
+                    System.out.println(recMsg[2].substring(1,recMsg[2].length()-1));
+                    System.out.println(receivingTable.get(recMsg[2].substring(1,recMsg[2].length()-1)).getPort());
                 }
             }
         }

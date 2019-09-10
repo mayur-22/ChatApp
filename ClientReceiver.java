@@ -26,10 +26,11 @@ class ClientReceiver extends Thread{
                	String senderUserName = "";
                	if(header.startsWith("FORWARD [") && header.endsWith("]"))
                	{
-               		senderUserName = header.substring(10,header.length()-2);
+               		senderUserName = header.substring(9,header.length()-1);
                		System.out.println("senderUserName: "+senderUserName);
 
                		header = inFromServer.readLine();
+                        System.out.println(header);
                     if(header.startsWith("Content-length: [") && header.endsWith("]"))
                    	{
                    		System.out.println(header);                              
@@ -63,7 +64,7 @@ class ClientReceiver extends Thread{
                     if(b-a-1 == mLength)
                     {
                     	message = message.substring(1,message.length()-2);
-                    	String ret = "RECEIVED ["+senderUserName+"]n\n\n";
+                    	String ret = "RECEIVED ["+senderUserName+"]\n\n";
 						outToServer.writeBytes(ret);
 						System.out.println("New Message Received.\n Sender:"+senderUserName
 						+"\nMessage: "+message);
@@ -97,7 +98,8 @@ class ClientReceiver extends Thread{
 
 
 			}
-			catch(Exception e){e.printStackTrace();}
+			catch(Exception e){e.printStackTrace();
+                        return;}
 
 		}
 	}
