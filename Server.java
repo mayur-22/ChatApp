@@ -15,9 +15,9 @@ class Server
     }
     ConcurrentHashMap<String,Socket> receivingTable;
     ConcurrentHashMap<String,Socket> sendingTable;
-    ConcurrentHashMap<String,PublicKey> keyTable;
+    ConcurrentHashMap<String,String> keyTable;
     ArrayList<String> registered;
-
+    int mode;
 
     public Server(){
         receivingTable = new ConcurrentHashMap<>();
@@ -36,6 +36,7 @@ class Server
         DataOutputStream outToClient;
         DataInputStream inDataStream;
         String username;
+        
 
         
         
@@ -65,6 +66,11 @@ class Server
                 }
                 else
                 {
+                    if(mode == 1 || mode==2)
+                    {
+                        String publicKey = recMsg[3].substring(1, recMsg[3].length()-1);
+                        keyTable.put(username, publicKey);
+                    }
                     String retMsg = "REGISTERED TOSEND ["+username+"]\n\n";
                     outToClient.writeBytes(retMsg);
                     success=true;
@@ -155,6 +161,30 @@ class Server
                       outToClient.writeBytes("UNREGISTERED SUCCESSFULLY\n");
                       return;
                       
+                  }
+                  else if(header.startsWith("FETCHKEY") && mode==1 || mode == 2)
+                  {
+                      try
+                      {
+                          String keyReq =  header.substring(10, header.lastIndexOf(']'));
+                          if(registered.contains(keyReq))
+                          {
+                              outToClient.writeBytes("KEY ["+ keyTable.get(keyReq) +"]\n");
+                              continue;
+                          }
+                          else
+                          {
+                              
+                              outToClient.writeBytes("ERROR 105 Requested user not registered\\n\n");
+                              continue;
+                          }
+                      }
+                      catch(Exception e)
+                      {
+                          System.out.println("Error Message Format");
+                          outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
+                          continue;
+                      }
                   }
                   
                   if(mLength>=0)
@@ -331,7 +361,7 @@ class Server
     }
     void runServer(int mode)throws Exception
     {
-        
+        this.mode = mode;
         ServerSocket welcomeSocket = new ServerSocket(2200);
         while(true)
         {
@@ -347,7 +377,6 @@ class Server
                 {
                 if(newSender.success)
                 {
-                    
                     Thread t = new Thread(newSender);
                     t.start();
                     registered.add(newSender.username);
