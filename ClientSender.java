@@ -40,7 +40,11 @@ class ClientSender extends Thread{
 
 				userStr = sc.nextLine();
 
-				if(userStr.equals("UNREGISTER")){
+				if(userStr.equals("Unregister")){
+					String toSend = "UNREGISTER\n\n";
+					outToServer.writeBytes(toSend);
+
+
 
 				}
 				
@@ -72,6 +76,9 @@ class ClientSender extends Thread{
 					System.out.println("Unable to Send");
 				else if (receiveMsg[1].equals("103"))
 					System.out.println("Header Incomplete");
+				else if(receiveMsg[0].equals("UNREGISTERED" && receiveMsg[1].equals("SUCCESSFULLY"))){
+					return;
+				}
 			}
 			catch(Exception e){e.printStackTrace();
                         return;}
