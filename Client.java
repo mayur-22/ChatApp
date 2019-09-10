@@ -34,7 +34,7 @@ class Client{
 	 		BufferedReader inFromServer = new BufferedReader(new InputStreamReader(sendSocket.getInputStream()));
 	 		String receiveMsg[] = (inFromServer.readLine()).split(" ");
 
-	 		if(receiveMsg[0].equals("Error")){
+	 		if(receiveMsg[0].equals("ERROR")){
 	 			if(receiveMsg[1].equals("100"))
 	 				System.out.println("Ill Formed UserName");
 	 			else if(receiveMsg[1].equals("104"))

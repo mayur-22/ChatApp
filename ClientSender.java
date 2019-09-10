@@ -6,7 +6,6 @@
 	If [ or ] occur in messafe or username then will result in bad output
 	
 	Sample Valid Input: @[mayur] [messsageadsfa]
-
 */
 
 import java.io.*;
@@ -43,7 +42,12 @@ class ClientSender extends Thread{
 				if(userStr.equals("Unregister")){
 					String toSend = "UNREGISTER\n\n";
 					outToServer.writeBytes(toSend);
-
+                                        String ack = inFromServer.readLine();
+                                        System.out.println(ack);
+                                        if(ack.startsWith("REGISTERED SUCCESSFULLY"))
+                                            System.out.println("Exit");
+                                        this.soc.close();
+                                        return;
 
 
 				}
@@ -68,7 +72,7 @@ class ClientSender extends Thread{
 				System.out.println("toSend "+toSend);
 				outToServer.writeBytes(toSend);
                                 String ack = inFromServer.readLine();
-                                System.out.println("1" + ack);
+                                System.out.println(ack);
 				String receiveMsg[] = ack.split(" ");
 				if(receiveMsg[0].equals("SENT"))
 					System.out.println("Message Sent Successfully");
@@ -76,7 +80,7 @@ class ClientSender extends Thread{
 					System.out.println("Unable to Send");
 				else if (receiveMsg[1].equals("103"))
 					System.out.println("Header Incomplete");
-				else if(receiveMsg[0].equals("UNREGISTERED" && receiveMsg[1].equals("SUCCESSFULLY"))){
+				else if(receiveMsg[0].equals("UNREGISTERED") && receiveMsg[1].equals("SUCCESSFULLY")){
 					return;
 				}
 			}
@@ -98,7 +102,7 @@ class ParserS{
 	
 	//constructor class
 	public ParserS(String inp){
-		if(!(inp.charAt(0)=='@' && inp.charAt(1)=='[')){
+		if(!(inp.charAt(0)=='@' && inp.charAt(1)=='[' && inp.charAt(inp.length()-1)==']')){
 			this.recipientUserName = "";
 			this.message = "";
 			this.valid = false;

@@ -52,31 +52,37 @@ class Server
             inDataStream = new DataInputStream(sender.getInputStream());
             
             boolean wellFormed = false;
-        wellFormed = checkName(recMsg[2]);
-        if(wellFormed)
+            wellFormed = checkName(recMsg[2]);
+            if(wellFormed)
             {
                 username = recMsg[2].substring(1,recMsg[2].length()-1);
-            if(registered.contains(username))
+                if(registered.contains(username))
                 {
                     String retMsg = "ERROR 104 Already Registered\n\n";
                     outToClient.writeBytes(retMsg);
                 }
-            
-            String retMsg = "REGISTERED TOSEND ["+username+"]\n\n";
-            outToClient.writeBytes(retMsg);
-            success=true;
+                else
+                {
+                    String retMsg = "REGISTERED TOSEND ["+username+"]\n\n";
+                    outToClient.writeBytes(retMsg);
+                    success=true;
+                }
     
         }
         else
             {
             String retMsg = "ERROR 100 Malformed username\n\n";
-        outToClient.writeBytes(retMsg);
+            outToClient.writeBytes(retMsg); 
         }
            
             }catch(IOException e)
             {
                 System.out.println("Error communicating with socket "+ incoming.getInetAddress() + " "+incoming.getPort());
                 System.out.println(Arrays.toString(e.getStackTrace()));
+                registered.remove(this.username);
+                      receivingTable.remove(this.username);
+                      sendingTable.remove(this.username);
+                
             }
         }
         
@@ -109,8 +115,7 @@ class Server
                   if(header.startsWith("SEND [") && header.endsWith("]"))
                   {
                       destName = header.substring(6,header.length()-1);
-                      if(registered.contains(header.substring(6,header.length()-1)))
-                      {
+                      
                           
                           header = inFromClient.readLine();
                           if(header.startsWith("Content-length: [") && header.endsWith("]"))
@@ -127,9 +132,27 @@ class Server
                                System.out.println(e.getMessage());
                            }
                           }
+                      
+                      if(!registered.contains(destName))
+                      {
+                        mLength = mLength + mLength;  
+                        char[] buf = new char[mLength];                    
+                        inFromClient.read(buf,0,mLength);
+                        String Message = new String(buf);
+                        System.out.print(Message);
+                        outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
+                        continue;
                       }
                   }
-                  
+                  else if(header.startsWith("UNREGISTER"))
+                  {
+                      registered.remove(this.username);
+                      receivingTable.remove(this.username);
+                      sendingTable.remove(this.username);
+                      outToClient.writeBytes("UNREGISTERED SUCCESSFULLY\n");
+                      return;
+                      
+                  }
                   
                   if(mLength>=0)
                   {
@@ -174,6 +197,9 @@ class Server
               catch(IOException e)
               {
                   System.out.println("Error receiving message from the port "+ sender.getPort());
+                  registered.remove(this.username);
+                  receivingTable.remove(this.username);
+                  sendingTable.remove(this.username);
                   break;
               }
           }
@@ -303,11 +329,13 @@ class Server
             Socket incoming = welcomeSocket.accept();
             System.out.println("New Socket Created:" + incoming.getPort());
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
-        String recMsg[] = inFromClient.readLine().split(" ");
-        System.out.println(recMsg[1]);
+            String recMsg[] = inFromClient.readLine().split(" ");
+            System.out.println(recMsg[1]);
             if(recMsg[1].equals("TOSEND"))
             {
                 ServerSender newSender = new ServerSender(incoming,recMsg);
+                while(true)
+                {
                 if(newSender.success)
                 {
                     
@@ -316,18 +344,31 @@ class Server
                     registered.add(newSender.username);
                     sendingTable.put(newSender.username,newSender.sender);
                     System.out.println("Registered: "+newSender.username);
+                    break;
+                }
+                else
+                {
+                    String s = inFromClient.readLine();
+                    System.out.println(s);
+                    recMsg = s.split(" ");
+                    if(recMsg.length >=3)
+                     newSender = new ServerSender(incoming,recMsg);
+                }
                 }
             }
             else if(recMsg[1].equals("TORECV"))
             {
                 ServerReceiver  newReceiver = new ServerReceiver(incoming,recMsg[2]);
+                                 
                 if(newReceiver.success)
                 {
                     System.out.println("success");
                     receivingTable.put(recMsg[2].substring(1,recMsg[2].length()-1),incoming);
                     System.out.println(recMsg[2].substring(1,recMsg[2].length()-1));
                     System.out.println(receivingTable.get(recMsg[2].substring(1,recMsg[2].length()-1)).getPort());
-                }
+                }                    
+                                   
+                
             }
         }
         
