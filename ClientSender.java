@@ -6,7 +6,6 @@
 	If [ or ] occur in messafe or username then will result in bad output
 	
 	Sample Valid Input: @[mayur] [messsageadsfa]
-
 */
 
 import java.io.*;
@@ -40,7 +39,16 @@ class ClientSender extends Thread{
 
 				userStr = sc.nextLine();
 
-				if(userStr.equals("UNREGISTER")){
+				if(userStr.equals("Unregister")){
+					String toSend = "UNREGISTER\n\n";
+					outToServer.writeBytes(toSend);
+                                        String ack = inFromServer.readLine();
+                                        System.out.println(ack);
+                                        if(ack.startsWith("REGISTERED SUCCESSFULLY"))
+                                            System.out.println("Exit");
+                                        this.soc.close();
+                                        return;
+
 
 				}
 				
@@ -55,22 +63,29 @@ class ClientSender extends Thread{
 
 				String userToSend = pr.getUserName();
 				String message = pr.getMessage();
+				System.out.println(message);
 
 				String toSend = "";
 				toSend += "SEND [" + userToSend + "]\n";
 				toSend += "Content-length: [" + message.length() + "]\n\n";
 				toSend += "[" + message + "]";
-
+				System.out.println("toSend "+toSend);
 				outToServer.writeBytes(toSend);
-				String receiveMsg[] = (inFromServer.readLine()).split(" ");
+                                String ack = inFromServer.readLine();
+                                System.out.println(ack);
+				String receiveMsg[] = ack.split(" ");
 				if(receiveMsg[0].equals("SENT"))
 					System.out.println("Message Sent Successfully");
 				else if (receiveMsg[1].equals("102"))
 					System.out.println("Unable to Send");
 				else if (receiveMsg[1].equals("103"))
 					System.out.println("Header Incomplete");
+				else if(receiveMsg[0].equals("UNREGISTERED") && receiveMsg[1].equals("SUCCESSFULLY")){
+					return;
+				}
 			}
-			catch(Exception e){e.printStackTrace();}
+			catch(Exception e){e.printStackTrace();
+                        return;}
 
 		}
 
@@ -87,7 +102,7 @@ class ParserS{
 	
 	//constructor class
 	public ParserS(String inp){
-		if(inp.charAt(0)=='@' && inp.charAt(1)=='['){
+		if(!(inp.charAt(0)=='@' && inp.charAt(1)=='[' && inp.charAt(inp.length()-1)==']')){
 			this.recipientUserName = "";
 			this.message = "";
 			this.valid = false;
@@ -111,7 +126,7 @@ class ParserS{
 			}
 
 			//assuming no extra special brakcets ]
-			i += 2; //assuming space berween brackets
+			i += 3; //assuming space berween brackets
 			this.message = "";
 			while(i!=inp.length()){
 				if(inp.charAt(i)==']')

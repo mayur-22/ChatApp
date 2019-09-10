@@ -11,7 +11,7 @@ class Client{
 
 	 	Scanner sc = new Scanner(System.in);
 	 	System.out.print("Enter IPAddress: ");
-	 	serverIPAddress = sc.nextLine();
+	 	serverIPAddress = "localhost";
 
 	 	//port number = 2200
 	 	Socket sendSocket = new Socket(serverIPAddress,2200);
@@ -19,7 +19,11 @@ class Client{
 
 	 	while(true){
 	 		System.out.print("Please Enter New UserName: ");
+	 		// username = "aca";
 	 		username = sc.nextLine();
+	 		// if(!username.equals("asa")){
+	 		// 	System.out.println("xx");
+	 		// 	username = "asa";}
 
 	 		//output to server
 	 		String sendMsg = "REGISTER TOSEND ["+username+"]\n\n";
@@ -30,7 +34,7 @@ class Client{
 	 		BufferedReader inFromServer = new BufferedReader(new InputStreamReader(sendSocket.getInputStream()));
 	 		String receiveMsg[] = (inFromServer.readLine()).split(" ");
 
-	 		if(receiveMsg[0].equals("Error")){
+	 		if(receiveMsg[0].equals("ERROR")){
 	 			if(receiveMsg[1].equals("100"))
 	 				System.out.println("Ill Formed UserName");
 	 			else if(receiveMsg[1].equals("104"))
@@ -42,10 +46,11 @@ class Client{
 
 		//registering for receiving
 		Socket receiveSocket = new Socket(serverIPAddress,2200);
-		String sendMsg = "REGISTER TOREC ["+username+"]\n\n";
+		String sendMsg = "REGISTER TORECV ["+username+"]\n\n";
 	 	DataOutputStream outToServer = new DataOutputStream(receiveSocket.getOutputStream());
 	 	outToServer.writeBytes(sendMsg);
 
+	 	
 	 	//now we have successfully registered
 	 	
 	 	
