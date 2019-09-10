@@ -42,11 +42,16 @@ class ClientSender extends Thread{
 
 	public static String encrypt(byte[] publicKey, byte[] inputData) throws Exception {
             PublicKey key = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
+            System.out.println("x");
 
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.ENCRYPT_MODE, key);
 
+            System.out.println("y");
+
             byte[] encryptedBytes = cipher.doFinal(inputData);
+
+            System.out.println("z");
             String encryptedString =  new String(encryptedBytes);
 
             return encryptedString;
@@ -105,6 +110,7 @@ class ClientSender extends Thread{
 
 				String toSend = "SEND [" + userToSend + "]\n";
 				toSend += "Content-length: [" + message.length() + "]\n\n";
+				System.out.println(senderPublicKey);
 				if(isEncrypted)
 					toSend += "[" + encrypt(senderPublicKey.getBytes(),message.getBytes()) + "]";
 				else

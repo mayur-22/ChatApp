@@ -34,12 +34,16 @@ class Client{
 
 	 		if(enc==1){
 	 			KeyPairGenerator kgp = KeyPairGenerator.getInstance("RSA");
+	 			kgp.initialize(512);
 	 			KeyPair kp = kgp.generateKeyPair();
-	 			System.out.println(kp.getPublic() + " " + kp.getPrivate());
+	 			// System.out.println(kp.getPublic() + " " + kp.getPrivate());
 
 	 			String publicKey = new String(kp.getPublic().getEncoded());
+	 			System.out.println("Mypublickey: "+publicKey);
 	 			privateKey = new String(kp.getPrivate().getEncoded());
-	 			String sendMsg = "REGISTER TOSEND ["+username+"] ["+publicKey+"]\n\n";
+	 			String sendMsg = "REGISTER TOSEND ["+username+"]\n";
+	 			sendMsg += "Content-length: [" + publicKey.length() + "]\n";
+	 			sendMsg += "[" + publicKey + "]";
 		 		DataOutputStream outToServer = new DataOutputStream(sendSocket.getOutputStream());
 		 		outToServer.writeBytes(sendMsg);
 	 		}
