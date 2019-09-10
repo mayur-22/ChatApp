@@ -36,6 +36,8 @@ class Server
         DataOutputStream outToClient;
         DataInputStream inDataStream;
         String username;
+
+        
         
         public String getName()
         {
@@ -124,6 +126,7 @@ class Server
                            try
                            {
                             mLength = Integer. parseInt(header.substring(header.indexOf('[')+1,header.indexOf(']')));
+                            System.out.println(mLength);
                            
                            }
                            catch(NumberFormatException e)
@@ -135,7 +138,7 @@ class Server
                       
                       if(!registered.contains(destName))
                       {
-                        mLength = mLength + mLength;  
+                        mLength = mLength +4;  
                         char[] buf = new char[mLength];                    
                         inFromClient.read(buf,0,mLength);
                         String Message = new String(buf);
@@ -156,12 +159,15 @@ class Server
                   
                   if(mLength>=0)
                   {
-                      mLength = mLength + mLength;  
-                      char[] buf = new char[mLength];                    
+                      mLength = mLength + 4;  
+                      char[] buf = new char[mLength];
+                                         
                       inFromClient.read(buf,0,mLength);
+                      for( char l:buf)
+                      System.out.println(l);
                       String Message = new String(buf);
                       System.out.print(Message);
-                      mLength = mLength/2;
+                      mLength = mLength-4;
                       
                               int a = Message.indexOf('[');
                               int b = Message.lastIndexOf(']');
@@ -266,6 +272,8 @@ class Server
                   {
                   inStream = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
                   outStream = new DataOutputStream(incoming.getOutputStream());
+                  String retMsg = "REGISTERED TORECV ["+username+"]\n\n";
+                  outStream.writeBytes(retMsg);
                   }
                   catch(IOException e)
                   {
@@ -308,6 +316,7 @@ class Server
                DataOutputStream senderOut = new DataOutputStream(s.getOutputStream());
                System.out.println(s.getPort());
                senderOut.writeBytes("SENT ["+username+"]\n");
+               int c = inStream.read();
                System.out.println("Sent");
            }
           }

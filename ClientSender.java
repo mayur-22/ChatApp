@@ -11,6 +11,13 @@
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;
+import java.security.*;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+
+import javax.crypto.Cipher;
+
+
 
 
 class ClientSender extends Thread{
@@ -18,15 +25,32 @@ class ClientSender extends Thread{
 	private Socket soc;
 	private DataOutputStream outToServer;
 	private BufferedReader inFromServer;
+	private boolean isEncrypted;
 
 
 	//if b is true then it is receiver;
 	//else it is a sender
-	public ClientSender(Socket s) throws Exception{
+	public ClientSender(Socket s,int enc) throws Exception{
 		this.soc = s;
 		this.outToServer = new DataOutputStream(s.getOutputStream());
 		this.inFromServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
+		if(enc==0)
+			isEncrypted = false;
+		else
+			isEncrypted = true;
 	}
+
+	public static String encrypt(byte[] publicKey, byte[] inputData) throws Exception {
+            PublicKey key = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
+
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+
+            byte[] encryptedBytes = cipher.doFinal(inputData);
+            String encryptedString =  new String(encryptedBytes);
+
+            return encryptedString;
+        }
 
 	@Override
 	public void run(){
@@ -42,14 +66,12 @@ class ClientSender extends Thread{
 				if(userStr.equals("Unregister")){
 					String toSend = "UNREGISTER\n\n";
 					outToServer.writeBytes(toSend);
-                                        String ack = inFromServer.readLine();
-                                        System.out.println(ack);
-                                        if(ack.startsWith("REGISTERED SUCCESSFULLY"))
-                                            System.out.println("Exit");
-                                        this.soc.close();
-                                        return;
-
-
+                    String ack = inFromServer.readLine();
+                    System.out.println(ack);
+                    if(ack.startsWith("REGISTERED SUCCESSFULLY"))
+                        System.out.println("Exit");
+                    this.soc.close();
+                    return;
 				}
 				
 				//new class will be made which will return username messege and boolean;
@@ -63,16 +85,34 @@ class ClientSender extends Thread{
 
 				String userToSend = pr.getUserName();
 				String message = pr.getMessage();
+				String senderPublicKey = "";
+				if(isEncrypted){
+					String send = "FETCHKEY ["+userToSend+"]\n";
+					System.out.println("toSendEnc: "+send);
+					outToServer.writeBytes(send);
+					String ackt = inFromServer.readLine();
+					System.out.println("ack:"+ackt);
+					String  rectMsg[] = ackt.split(" ");
+					if(rectMsg[0].equals("KEY")){
+						senderPublicKey = rectMsg[1].substring(1,rectMsg[1].length()-1);
+					}
+					else if (rectMsg[1].equals("102"))
+						System.out.println("Unable to Send");
+					else if (rectMsg[1].equals("103"))
+						System.out.println("Header Incomplete");
+				}
 				System.out.println(message);
 
-				String toSend = "";
-				toSend += "SEND [" + userToSend + "]\n";
+				String toSend = "SEND [" + userToSend + "]\n";
 				toSend += "Content-length: [" + message.length() + "]\n\n";
-				toSend += "[" + message + "]";
+				if(isEncrypted)
+					toSend += "[" + encrypt(senderPublicKey.getBytes(),message.getBytes()) + "]";
+				else
+					toSend += "[" + message + "]";
 				System.out.println("toSend "+toSend);
 				outToServer.writeBytes(toSend);
-                                String ack = inFromServer.readLine();
-                                System.out.println(ack);
+                String ack = inFromServer.readLine();
+                System.out.println(ack);
 				String receiveMsg[] = ack.split(" ");
 				if(receiveMsg[0].equals("SENT"))
 					System.out.println("Message Sent Successfully");
@@ -84,8 +124,7 @@ class ClientSender extends Thread{
 					return;
 				}
 			}
-			catch(Exception e){e.printStackTrace();
-                        return;}
+			catch(Exception e){}
 
 		}
 
