@@ -68,8 +68,30 @@ class Server
                 {
                     if(mode == 1 || mode==2)
                     {
-                        String publicKey = recMsg[3].substring(1, recMsg[3].length()-1);
-                        keyTable.put(username, publicKey);
+                        String header = inFromClient.readLine();
+                        if(header.startsWith("Content-length: [") && header.endsWith("]"))
+                        {
+                            try
+                            {
+                                int mLength  = Integer.parseInt(header.substring(17,header.length()-1));
+                                char[] buf = new char[mLength+2];                    
+                                inFromClient.read(buf,0,mLength+2);
+                                header = new String(buf);
+                                header = header.substring(1,header.length()-1);
+                                keyTable.put(this.username,header);
+                            }
+                            catch(NumberFormatException e)
+                            {
+                                outToClient.writeBytes("ERROR 102 Header Incomplete\n");
+                            }
+                            
+                        }
+                        else
+                        {
+                            outToClient.writeBytes("ERROR 102 Header Incomplete\n");
+                        }
+                        
+                        //keyTable.put(username, publicKey);
                     }
                     String retMsg = "REGISTERED TOSEND ["+username+"]\n\n";
                     outToClient.writeBytes(retMsg);
@@ -179,7 +201,7 @@ class Server
                               continue;
                           }
                       }
-                      catch(Exception e)
+                      catch(IOException e)
                       {
                           System.out.println("Error Message Format");
                           outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
