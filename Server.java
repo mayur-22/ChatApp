@@ -11,7 +11,7 @@ class Server
 
     public static void main(String[] args) throws Exception{
         Server s = new Server();
-        s.runServer(0);
+        s.runServer(1);
     }
     ConcurrentHashMap<String,Socket> receivingTable;
     ConcurrentHashMap<String,Socket> sendingTable;
@@ -69,6 +69,7 @@ class Server
                     if(mode == 1 || mode==2)
                     {
                         String header = inFromClient.readLine();
+                        System.out.println(header);
                         if(header.startsWith("Content-length: [") && header.endsWith("]"))
                         {
                             try
@@ -78,17 +79,19 @@ class Server
                                 inFromClient.read(buf,0,mLength+2);
                                 header = new String(buf);
                                 header = header.substring(1,header.length()-1);
+                                System.out.println(header);
                                 keyTable.put(this.username,header);
                             }
                             catch(NumberFormatException e)
                             {
-                                outToClient.writeBytes("ERROR 102 Header Incomplete\n");
+                                outToClient.writeBytes("ERROR 102 Header Incomplete\n\n");
                             }
                             
                         }
                         else
                         {
-                            outToClient.writeBytes("ERROR 102 Header Incomplete\n");
+                            outToClient.writeBytes("ERROR 102 Header Incomplete\n\n");
+                            return;
                         }
                         
                         //keyTable.put(username, publicKey);
@@ -191,7 +194,9 @@ class Server
                           String keyReq =  header.substring(10, header.lastIndexOf(']'));
                           if(registered.contains(keyReq))
                           {
-                              outToClient.writeBytes("KEY ["+ keyTable.get(keyReq) +"]\n");
+                              String k =keyTable.get(keyReq);
+                              outToClient.writeBytes("KEY ["+ k.length() +"]\n");
+                              outToClient.writeBytes("[" + k + "]");
                               continue;
                           }
                           else
@@ -390,7 +395,9 @@ class Server
             Socket incoming = welcomeSocket.accept();
             System.out.println("New Socket Created:" + incoming.getPort());
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
-            String recMsg[] = inFromClient.readLine().split(" ");
+            String r = inFromClient.readLine();
+            System.out.println(r);
+            String recMsg[] = r.split(" ");
             System.out.println(recMsg[1]);
             if(recMsg[1].equals("TOSEND"))
             {

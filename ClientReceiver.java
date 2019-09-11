@@ -113,11 +113,8 @@ class ClientReceiver extends Thread{
 				int length = inFromServer.available();
 				byte[] buf = new byte[length];
 				inFromServer.readFully(buf);
-
 				String inp = new String(buf);
-
 				ParserR pr = new ParserR(inp);
-
 				if(!pr.isValid()){
 					String ret = "ERROR 103 Header Incomplete\n\n";
 					outToServer.writeBytes(ret);

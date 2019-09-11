@@ -39,11 +39,13 @@ class Client{
 	 			// System.out.println(kp.getPublic() + " " + kp.getPrivate());
 
 	 			String publicKey = new String(kp.getPublic().getEncoded());
-	 			System.out.println("Mypublickey: "+publicKey);
+	 			System.out.println("Mypublickey: ");
+                                System.out.println(publicKey);
 	 			privateKey = new String(kp.getPrivate().getEncoded());
 	 			String sendMsg = "REGISTER TOSEND ["+username+"]\n";
 	 			sendMsg += "Content-length: [" + publicKey.length() + "]\n";
 	 			sendMsg += "[" + publicKey + "]";
+                                System.out.println(sendMsg);
 		 		DataOutputStream outToServer = new DataOutputStream(sendSocket.getOutputStream());
 		 		outToServer.writeBytes(sendMsg);
 	 		}
@@ -58,7 +60,7 @@ class Client{
 	 		//input from server
 	 		BufferedReader inFromServer = new BufferedReader(new InputStreamReader(sendSocket.getInputStream()));
 	 		String receiveMsg[] = (inFromServer.readLine()).split(" ");
-            String r = inFromServer.readLine();
+                        String r = inFromServer.readLine();
 	 		if(receiveMsg[0].equals("ERROR")){
 	 			if(receiveMsg[1].equals("100"))
 	 				System.out.println("Ill Formed UserName");
@@ -93,5 +95,3 @@ class Client{
 	}
 
 }
-
-
