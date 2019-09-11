@@ -99,12 +99,28 @@ class ClientSender extends Thread{
 					System.out.println("ack:"+ackt);
 					String  rectMsg[] = ackt.split(" ");
 					if(rectMsg[0].equals("KEY")){
-						senderPublicKey = rectMsg[1].substring(1,rectMsg[1].length()-1);
+                                                int mLength = Integer.parseInt(rectMsg[1].substring(1,rectMsg[1].length()-1));
+                                                char[] buf = new char[mLength+2];                    
+                                                inFromServer.read(buf,0,mLength+2);
+                                                String Message = new String(buf);
+                                                senderPublicKey = Message.substring(1,Message.length()-1);
+                                        
 					}
 					else if (rectMsg[1].equals("102"))
+                                        {
 						System.out.println("Unable to Send");
+                                                continue;
+                                        }
 					else if (rectMsg[1].equals("103"))
+                                        {
 						System.out.println("Header Incomplete");
+                                                continue;
+                                        }
+                                        else
+                                        {
+                                            System.out.println("Header Incomplete");
+                                            continue;
+                                        }
 				}
 				System.out.println(message);
 
