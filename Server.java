@@ -11,13 +11,13 @@ class Server
 
     public static void main(String[] args) throws Exception{
         Server s = new Server();
-        s.runServer(0);
+        s.runServer(1);
     }
     ConcurrentHashMap<String,Socket> receivingTable;
     ConcurrentHashMap<String,Socket> sendingTable;
-    ConcurrentHashMap<String,PublicKey> keyTable;
+    ConcurrentHashMap<String,String> keyTable;
     ArrayList<String> registered;
-
+    int mode;
 
     public Server(){
         receivingTable = new ConcurrentHashMap<>();
@@ -36,6 +36,9 @@ class Server
         DataOutputStream outToClient;
         DataInputStream inDataStream;
         String username;
+        
+
+        
         
         public String getName()
         {
@@ -63,6 +66,39 @@ class Server
                 }
                 else
                 {
+                    if(mode == 1 || mode==2)
+                    {
+                        System.out.println("working");
+                        DataInputStream inFromClientUTF = new DataInputStream(new BufferedInputStream(sender.getInputStream()));
+                        String inpMsg[] = (inFromClientUTF.readUTF()).split("\n",2);
+                        String header = inpMsg[0];
+                        System.out.println(header.length()+" 2nd line: "+header);
+                        if(header.startsWith("Content-length: [") && header.endsWith("]"))
+                        {
+                            try
+                            {
+                                // int mLength  = Integer.parseInt(header.substring(17,header.length()-1));
+                                // char[] buf = new char[mLength+2];                    
+                                // inFromClient.read(buf,0,mLength+2);
+                                // header = new String(buf);
+                                header = inpMsg[1];
+                                header = header.substring(1,header.length()-1);
+                                System.out.println(this.username+ " key "+header);
+                                keyTable.put(this.username,header);
+                            }
+                            catch(NumberFormatException e)
+                            {
+                                outToClient.writeBytes("ERROR 102 Header Incomplete\n");
+                            }
+                            
+                        }
+                        else
+                        {
+                            outToClient.writeBytes("ERROR 102 Header Incomplete\n");
+                        }
+                        
+                        //keyTable.put(username, publicKey);
+                    }
                     String retMsg = "REGISTERED TOSEND ["+username+"]\n\n";
                     outToClient.writeBytes(retMsg);
                     success=true;
@@ -120,10 +156,11 @@ class Server
                           header = inFromClient.readLine();
                           if(header.startsWith("Content-length: [") && header.endsWith("]"))
                           {
-                           System.out.println(header);                              
+                           System.out.println("headeryo:"+header);                              
                            try
                            {
                             mLength = Integer. parseInt(header.substring(header.indexOf('[')+1,header.indexOf(']')));
+                            System.out.println(mLength);
                            
                            }
                            catch(NumberFormatException e)
@@ -135,12 +172,12 @@ class Server
                       
                       if(!registered.contains(destName))
                       {
-                        mLength = mLength + mLength;  
+                        mLength = mLength +4;  
                         char[] buf = new char[mLength];                    
                         inFromClient.read(buf,0,mLength);
                         String Message = new String(buf);
                         System.out.print(Message);
-                        outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
+                        outToClient.writeBytes("ERROR 102 Unable to send\n\n");
                         continue;
                       }
                   }
@@ -153,18 +190,54 @@ class Server
                       return;
                       
                   }
-                  
+                  else if(header.startsWith("FETCHKEY") && mode==1 || mode == 2)
+                  {
+                      try
+                      {
+                          String keyReq =  header.substring(10, header.lastIndexOf(']'));
+                          if(registered.contains(keyReq))
+                          {
+                              outToClient.writeUTF("KEY ["+ keyTable.get(keyReq) +"]\n");
+                              System.out.println("KEY ["+ keyTable.get(keyReq) +"]\n");
+                              continue;
+                          }
+                          else
+                          {
+                              
+                              outToClient.writeBytes("ERROR 105 Requested user not registered\\n\n");
+                              continue;
+                          }
+                      }
+                      catch(IOException e)
+                      {
+                          System.out.println("Error Message Format");
+                          outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
+                          continue;
+                      }
+                  }
+                  System.out.println("mLength:"+mLength);
                   if(mLength>=0)
                   {
-                      mLength = mLength + mLength;  
-                      char[] buf = new char[mLength];                    
+                      /*
+                      mLength = mLength + 5;  
+                      char[] buf = new char[mLength];
+                                         
                       inFromClient.read(buf,0,mLength);
+                      for( char l:buf)
+                      System.out.println(l);
                       String Message = new String(buf);
                       System.out.print(Message);
-                      mLength = mLength/2;
-                      
+                      mLength = mLength-5;*/
+                      int c = inFromClient.read();
+                      String Message = "";
+                      System.out.println(c);
+                      for(int j=0;j<(mLength+2);j++)
+                        Message += Character.toString((char)inFromClient.read());
+                      //String k = inFromClient.readLine();
+                      System.out.print(Message + "end");
                               int a = Message.indexOf('[');
                               int b = Message.lastIndexOf(']');
+                              System.out.println("a " + a + " b " + b);
                               if(b-a-1 == mLength)
                               {
                                   
@@ -251,6 +324,7 @@ class Server
         String sendname;
         BufferedReader inStream;
         DataOutputStream outStream; 
+        DataInputStream inFromClient;
         public ServerReceiver(Socket incoming, String recMsg) 
         {
             success = false;
@@ -266,6 +340,9 @@ class Server
                   {
                   inStream = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
                   outStream = new DataOutputStream(incoming.getOutputStream());
+                  inFromClient = new DataInputStream(incoming.getInputStream());
+                  String retMsg = "REGISTERED TORECV ["+username+"]\n\n";
+                  outStream.writeBytes(retMsg);
                   }
                   catch(IOException e)
                   {
@@ -287,6 +364,7 @@ class Server
             {
                 inStream = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
                 outStream = new DataOutputStream(incoming.getOutputStream());
+                inFromClient = new DataInputStream(incoming.getInputStream());
             }
             catch(IOException e)
             {
@@ -299,8 +377,8 @@ class Server
           try
           {
            outStream.writeBytes(message);
-           System.out.println(message);
-           String msg = inStream.readLine();
+           System.out.println("forwarded msg: "+message);
+           String msg = inFromClient.readUTF();
            System.out.println(msg);
            if(msg.startsWith("RECEIVED ["+sendname+"]"))
            {
@@ -308,6 +386,7 @@ class Server
                DataOutputStream senderOut = new DataOutputStream(s.getOutputStream());
                System.out.println(s.getPort());
                senderOut.writeBytes("SENT ["+username+"]\n");
+//               int c = inStream.read();
                System.out.println("Sent");
            }
           }
@@ -322,14 +401,17 @@ class Server
     }
     void runServer(int mode)throws Exception
     {
-        
+        this.mode = mode;
         ServerSocket welcomeSocket = new ServerSocket(2200);
         while(true)
         {
             Socket incoming = welcomeSocket.accept();
             System.out.println("New Socket Created:" + incoming.getPort());
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
-            String recMsg[] = inFromClient.readLine().split(" ");
+            // String recMsg[] = inFromClient.readLine().split(" ");
+            String inptemp = inFromClient.readLine();
+            System.out.println(inptemp.length()+" 1st line: "+inptemp);
+            String recMsg[] = inptemp.split(" ");
             System.out.println(recMsg[1]);
             if(recMsg[1].equals("TOSEND"))
             {
@@ -338,7 +420,6 @@ class Server
                 {
                 if(newSender.success)
                 {
-                    
                     Thread t = new Thread(newSender);
                     t.start();
                     registered.add(newSender.username);
