@@ -4,6 +4,7 @@ import java.lang.*;
 import java.util.*;
 import java.security.*;
 
+
 class Client{
 
 	public static void main(String[] args) throws Exception{
@@ -34,20 +35,25 @@ class Client{
 
 	 		if(enc==1){
 	 			KeyPairGenerator kgp = KeyPairGenerator.getInstance("RSA");
-	 			kgp.initialize(512);
+        		SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN");
+	 			kgp.initialize(512,random);
 	 			KeyPair kp = kgp.generateKeyPair();
 	 			// System.out.println(kp.getPublic() + " " + kp.getPrivate());
 
-	 			String publicKey = new String(kp.getPublic().getEncoded());
-	 			System.out.println("Mypublickey: ");
-                                System.out.println(publicKey);
-	 			privateKey = new String(kp.getPrivate().getEncoded());
+	 			// String publicKey = new String(kp.getPublic().getEncoded());
+	 			String publicKey = Base64.getEncoder().encodeToString(kp.getPublic().getEncoded());
+	 			System.out.println("Mypublickey: "+publicKey);
+	 			privateKey = Base64.getEncoder().encodeToString(kp.getPrivate().getEncoded());
+	 			System.out.println("Myprivatekey: "+privateKey);
+	 			
 	 			String sendMsg = "REGISTER TOSEND ["+username+"]\n";
-	 			sendMsg += "Content-length: [" + publicKey.length() + "]\n";
-	 			sendMsg += "[" + publicKey + "]";
-                                System.out.println(sendMsg);
+	 			
 		 		DataOutputStream outToServer = new DataOutputStream(sendSocket.getOutputStream());
 		 		outToServer.writeBytes(sendMsg);
+		 		sendMsg = "Content-length: [" + publicKey.length() + "]\n";
+	 			sendMsg += "[" + publicKey + "]\n";
+	 			System.out.println(sendMsg);
+	 			outToServer.writeUTF(sendMsg);
 	 		}
 
 	 		//output to server
@@ -58,9 +64,10 @@ class Client{
 		 	}
 
 	 		//input from server
+	 		System.out.println("here");
 	 		BufferedReader inFromServer = new BufferedReader(new InputStreamReader(sendSocket.getInputStream()));
 	 		String receiveMsg[] = (inFromServer.readLine()).split(" ");
-                        String r = inFromServer.readLine();
+            String r = inFromServer.readLine();
 	 		if(receiveMsg[0].equals("ERROR")){
 	 			if(receiveMsg[1].equals("100"))
 	 				System.out.println("Ill Formed UserName");
@@ -95,3 +102,5 @@ class Client{
 	}
 
 }
+
+

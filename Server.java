@@ -11,7 +11,7 @@ class Server
 
     public static void main(String[] args) throws Exception{
         Server s = new Server();
-        s.runServer(1);
+        s.runServer(0);
     }
     ConcurrentHashMap<String,Socket> receivingTable;
     ConcurrentHashMap<String,Socket> sendingTable;
@@ -68,30 +68,33 @@ class Server
                 {
                     if(mode == 1 || mode==2)
                     {
-                        String header = inFromClient.readLine();
-                        System.out.println(header);
+                        System.out.println("working");
+                        DataInputStream inFromClientUTF = new DataInputStream(new BufferedInputStream(sender.getInputStream()));
+                        String inpMsg[] = (inFromClientUTF.readUTF()).split("\n",2);
+                        String header = inpMsg[0];
+                        System.out.println(header.length()+" 2nd line: "+header);
                         if(header.startsWith("Content-length: [") && header.endsWith("]"))
                         {
                             try
                             {
-                                int mLength  = Integer.parseInt(header.substring(17,header.length()-1));
-                                char[] buf = new char[mLength+2];                    
-                                inFromClient.read(buf,0,mLength+2);
-                                header = new String(buf);
+                                // int mLength  = Integer.parseInt(header.substring(17,header.length()-1));
+                                // char[] buf = new char[mLength+2];                    
+                                // inFromClient.read(buf,0,mLength+2);
+                                // header = new String(buf);
+                                header = inpMsg[1];
                                 header = header.substring(1,header.length()-1);
-                                System.out.println(header);
+                                System.out.println(this.username+ " key "+header);
                                 keyTable.put(this.username,header);
                             }
                             catch(NumberFormatException e)
                             {
-                                outToClient.writeBytes("ERROR 102 Header Incomplete\n\n");
+                                outToClient.writeBytes("ERROR 102 Header Incomplete\n");
                             }
                             
                         }
                         else
                         {
-                            outToClient.writeBytes("ERROR 102 Header Incomplete\n\n");
-                            return;
+                            outToClient.writeBytes("ERROR 102 Header Incomplete\n");
                         }
                         
                         //keyTable.put(username, publicKey);
@@ -153,7 +156,7 @@ class Server
                           header = inFromClient.readLine();
                           if(header.startsWith("Content-length: [") && header.endsWith("]"))
                           {
-                           System.out.println(header);                              
+                           System.out.println("headeryo:"+header);                              
                            try
                            {
                             mLength = Integer. parseInt(header.substring(header.indexOf('[')+1,header.indexOf(']')));
@@ -174,7 +177,7 @@ class Server
                         inFromClient.read(buf,0,mLength);
                         String Message = new String(buf);
                         System.out.print(Message);
-                        outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
+                        outToClient.writeBytes("ERROR 102 Unable to send\n\n");
                         continue;
                       }
                   }
@@ -194,9 +197,7 @@ class Server
                           String keyReq =  header.substring(10, header.lastIndexOf(']'));
                           if(registered.contains(keyReq))
                           {
-                              String k =keyTable.get(keyReq);
-                              outToClient.writeBytes("KEY ["+ k.length() +"]\n");
-                              outToClient.writeBytes("[" + k + "]");
+                              outToClient.writeUTF("KEY ["+ keyTable.get(keyReq) +"]\n");
                               continue;
                           }
                           else
@@ -213,7 +214,7 @@ class Server
                           continue;
                       }
                   }
-                  
+                  System.out.println("mLength:"+mLength);
                   if(mLength>=0)
                   {
                       mLength = mLength + 4;  
@@ -364,7 +365,7 @@ class Server
           try
           {
            outStream.writeBytes(message);
-           System.out.println(message);
+           System.out.println("forwarded msg: "+message);
            String msg = inStream.readLine();
            System.out.println(msg);
            if(msg.startsWith("RECEIVED ["+sendname+"]"))
@@ -395,9 +396,10 @@ class Server
             Socket incoming = welcomeSocket.accept();
             System.out.println("New Socket Created:" + incoming.getPort());
             BufferedReader inFromClient = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
-            String r = inFromClient.readLine();
-            System.out.println(r);
-            String recMsg[] = r.split(" ");
+            // String recMsg[] = inFromClient.readLine().split(" ");
+            String inptemp = inFromClient.readLine();
+            System.out.println(inptemp.length()+" 1st line: "+inptemp);
+            String recMsg[] = inptemp.split(" ");
             System.out.println(recMsg[1]);
             if(recMsg[1].equals("TOSEND"))
             {

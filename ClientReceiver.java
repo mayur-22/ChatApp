@@ -3,6 +3,7 @@ import java.net.*;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.*;
 
 import javax.crypto.Cipher;
 
@@ -38,7 +39,7 @@ class ClientReceiver extends Thread{
         cipher.init(Cipher.DECRYPT_MODE, key);
 
         byte[] decryptedBytes = cipher.doFinal(inputData);
-        String decryptedString = new String(decryptedBytes);
+        String decryptedString = Base64.getEncoder().encodeToString(decryptedBytes);
 
         return decryptedString;
     }
@@ -84,7 +85,7 @@ class ClientReceiver extends Thread{
 		            char[] buf = new char[mLength];                    
 		            inFromServer.read(buf,0,mLength);
 		            String message = new String(buf);
-		            System.out.println(message);
+		            System.out.println("Message received: "+message);
 		            mLength = mLength-4;
 		            int a = message.indexOf('[');
                     int b = message.lastIndexOf(']');
@@ -92,7 +93,13 @@ class ClientReceiver extends Thread{
                     {
                     	message = message.substring(1,message.length()-1);
                     	if(isEncrypted)
-                    		message = decrypt(privateKey.getBytes(),message.getBytes());
+                    		message = message.substring(1,message.length()-1);
+
+                    	System.out.println("encrsmg " +message);
+                    	System.out.println("privatekey: "+ privateKey);
+                    	System.out.println("\n\n\nYYYYYYYOOOOOOO\n\n");
+                    	if(isEncrypted)
+                    		message = decrypt(Base64.getDecoder().decode(privateKey),Base64.getDecoder().decode(message));
                     	String ret = "RECEIVED ["+senderUserName+"]\n\n";
 						outToServer.writeBytes(ret);
 						System.out.println("New Message Received.\n Sender:"+senderUserName +"\nMessage: "+message);
@@ -113,8 +120,11 @@ class ClientReceiver extends Thread{
 				int length = inFromServer.available();
 				byte[] buf = new byte[length];
 				inFromServer.readFully(buf);
+
 				String inp = new String(buf);
+
 				ParserR pr = new ParserR(inp);
+
 				if(!pr.isValid()){
 					String ret = "ERROR 103 Header Incomplete\n\n";
 					outToServer.writeBytes(ret);

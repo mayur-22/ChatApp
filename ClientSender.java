@@ -10,6 +10,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.Scanner;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -42,18 +43,13 @@ class ClientSender extends Thread{
 
 	public static String encrypt(byte[] publicKey, byte[] inputData) throws Exception {
             PublicKey key = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(publicKey));
-            System.out.println("x");
 
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.ENCRYPT_MODE, key);
 
-            System.out.println("y");
-
             byte[] encryptedBytes = cipher.doFinal(inputData);
-
-            System.out.println("z");
-            String encryptedString =  new String(encryptedBytes);
-
+            String encryptedString =  Base64.getEncoder().encodeToString(encryptedBytes);
+            System.out.println("Encoded String: "+encryptedString);
             return encryptedString;
         }
 
@@ -95,42 +91,43 @@ class ClientSender extends Thread{
 					String send = "FETCHKEY ["+userToSend+"]\n";
 					System.out.println("toSendEnc: "+send);
 					outToServer.writeBytes(send);
-					String ackt = inFromServer.readLine();
-					System.out.println("ack:"+ackt);
-					String  rectMsg[] = ackt.split(" ");
+
+                    DataInputStream inFromServerUTF = new DataInputStream(new BufferedInputStream(soc.getInputStream()));
+					String ackt = inFromServerUTF.readUTF();
+					String  rectMsg[] = ackt.split(" ",2);
 					if(rectMsg[0].equals("KEY")){
-                                                int mLength = Integer.parseInt(rectMsg[1].substring(1,rectMsg[1].length()-1));
-                                                char[] buf = new char[mLength+2];                    
-                                                inFromServer.read(buf,0,mLength+2);
-                                                String Message = new String(buf);
-                                                senderPublicKey = Message.substring(1,Message.length()-1);
-                                        
+		                // int mLength = Integer.parseInt(rectMsg[1].substring(1,rectMsg[1].length()-1));
+		                // char[] buf = new char[mLength+2];                    
+		                // inFromServer.read(buf,0,mLength+2);
+		                // String Message = new String(buf);
+		                senderPublicKey = rectMsg[1].substring(1,rectMsg[1].length()-3);
+                        System.out.println("SenderPublicKey:"+senderPublicKey);                
 					}
-					else if (rectMsg[1].equals("102"))
-                                        {
+					else if (rectMsg[1].equals("102")){
 						System.out.println("Unable to Send");
-                                                continue;
-                                        }
-					else if (rectMsg[1].equals("103"))
-                                        {
+                        continue;
+                    }
+					else if (rectMsg[1].equals("103")){
 						System.out.println("Header Incomplete");
-                                                continue;
-                                        }
-                                        else
-                                        {
-                                            System.out.println("Header Incomplete");
-                                            continue;
-                                        }
+                        continue;
+                    }
+                	else{
+	           			System.out.println("Header Incomplete");
+	                    continue;
+                    }
 				}
-				System.out.println(message);
 
 				String toSend = "SEND [" + userToSend + "]\n";
-				toSend += "Content-length: [" + message.length() + "]\n\n";
-				System.out.println(senderPublicKey);
-				if(isEncrypted)
-					toSend += "[" + encrypt(senderPublicKey.getBytes(),message.getBytes()) + "]";
-				else
+				if(isEncrypted){
+					// System.out.println(Base64.getDecoder.decode(senderPublicKey));
+					message = encrypt(Base64.getDecoder().decode(senderPublicKey),Base64.getDecoder().decode(message));
+					toSend += "Content-length: [" + message.length() + "]\n\n";
 					toSend += "[" + message + "]";
+				}
+				else{
+					toSend += "Content-length: [" + message.length() + "]\n\n";
+					toSend += "[" + message + "]";
+				}
 				System.out.println("toSend "+toSend);
 				outToServer.writeBytes(toSend);
                 String ack = inFromServer.readLine();
