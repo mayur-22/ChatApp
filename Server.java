@@ -11,7 +11,7 @@ class Server
 
     public static void main(String[] args) throws Exception{
         Server s = new Server();
-        s.runServer(0);
+        s.runServer(1);
     }
     ConcurrentHashMap<String,Socket> receivingTable;
     ConcurrentHashMap<String,Socket> sendingTable;
@@ -69,19 +69,19 @@ class Server
                     if(mode == 1 || mode==2)
                     {
                         System.out.println("working");
-                        DataInputStream inFromClientUTF = new DataInputStream(new BufferedInputStream(sender.getInputStream()));
-                        String inpMsg[] = (inFromClientUTF.readUTF()).split("\n",2);
-                        String header = inpMsg[0];
+                        // DataInputStream inFromClientUTF = new DataInputStream(new BufferedInputStream(sender.getInputStream()));
+                        // String inpMsg[] = (inFromClientUTF.readUTF()).split("\n",2);
+                        String header = inFromClient.readLine();
                         System.out.println(header.length()+" 2nd line: "+header);
                         if(header.startsWith("Content-length: [") && header.endsWith("]"))
                         {
                             try
                             {
-                                // int mLength  = Integer.parseInt(header.substring(17,header.length()-1));
-                                // char[] buf = new char[mLength+2];                    
-                                // inFromClient.read(buf,0,mLength+2);
-                                // header = new String(buf);
-                                header = inpMsg[1];
+                                int mLength  = Integer.parseInt(header.substring(17,header.length()-1));
+                                char[] buf = new char[mLength+2];                    
+                                inFromClient.read(buf,0,mLength+2);
+                                header = new String(buf);
+                                // header = inpMsg[1];
                                 header = header.substring(1,header.length()-1);
                                 System.out.println(this.username+ " key "+header);
                                 keyTable.put(this.username,header);
@@ -197,7 +197,13 @@ class Server
                           String keyReq =  header.substring(10, header.lastIndexOf(']'));
                           if(registered.contains(keyReq))
                           {
-                              outToClient.writeUTF("KEY ["+ keyTable.get(keyReq) +"]\n");
+                              String toSend = "KEY\n";
+                              toSend += "Content-length: ["+keyTable.get(keyReq).length()+"]\n";
+                              toSend += "["+keyTable.get(keyReq)+"]";
+                              outToClient.writeBytes(toSend);
+                              System.out.println(toSend);
+                              // outToClient.writeUTF("KEY ["+ keyTable.get(keyReq) +"]");
+                              // System.out.println("KEY ["+ keyTable.get(keyReq) +"]\n");
                               continue;
                           }
                           else
@@ -217,7 +223,8 @@ class Server
                   System.out.println("mLength:"+mLength);
                   if(mLength>=0)
                   {
-                      mLength = mLength + 4;  
+                      /*
+                      mLength = mLength + 5;  
                       char[] buf = new char[mLength];
                                          
                       inFromClient.read(buf,0,mLength);
@@ -225,10 +232,17 @@ class Server
                       System.out.println(l);
                       String Message = new String(buf);
                       System.out.print(Message);
-                      mLength = mLength-4;
-                      
+                      mLength = mLength-5;*/
+                      int c = inFromClient.read();
+                      String Message = "";
+                      System.out.println(c);
+                      for(int j=0;j<(mLength+2);j++)
+                        Message += Character.toString((char)inFromClient.read());
+                      //String k = inFromClient.readLine();
+                      System.out.print(Message + "end");
                               int a = Message.indexOf('[');
                               int b = Message.lastIndexOf(']');
+                              System.out.println("a " + a + " b " + b);
                               if(b-a-1 == mLength)
                               {
                                   
@@ -315,6 +329,7 @@ class Server
         String sendname;
         BufferedReader inStream;
         DataOutputStream outStream; 
+        DataInputStream inFromClient;
         public ServerReceiver(Socket incoming, String recMsg) 
         {
             success = false;
@@ -330,6 +345,7 @@ class Server
                   {
                   inStream = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
                   outStream = new DataOutputStream(incoming.getOutputStream());
+                  inFromClient = new DataInputStream(incoming.getInputStream());
                   String retMsg = "REGISTERED TORECV ["+username+"]\n\n";
                   outStream.writeBytes(retMsg);
                   }
@@ -353,6 +369,7 @@ class Server
             {
                 inStream = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
                 outStream = new DataOutputStream(incoming.getOutputStream());
+                inFromClient = new DataInputStream(incoming.getInputStream());
             }
             catch(IOException e)
             {
@@ -366,7 +383,7 @@ class Server
           {
            outStream.writeBytes(message);
            System.out.println("forwarded msg: "+message);
-           String msg = inStream.readLine();
+           String msg = inFromClient.readUTF();
            System.out.println(msg);
            if(msg.startsWith("RECEIVED ["+sendname+"]"))
            {
@@ -374,7 +391,7 @@ class Server
                DataOutputStream senderOut = new DataOutputStream(s.getOutputStream());
                System.out.println(s.getPort());
                senderOut.writeBytes("SENT ["+username+"]\n");
-               int c = inStream.read();
+//               int c = inStream.read();
                System.out.println("Sent");
            }
           }

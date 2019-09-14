@@ -13,12 +13,12 @@ class ClientReceiver extends Thread{
 	private DataOutputStream outToServer;
 	private BufferedReader inFromServer;
 	private boolean isEncrypted;
-	private String privateKey;
+	private byte[] privateKey;
 
 
 	//if b is true then it is receiver;
 	//else it is a sender
-	public ClientReceiver(Socket s,int enc,String privateKey) throws Exception{
+	public ClientReceiver(Socket s,int enc,byte[] privateKey) throws Exception{
 		this.soc = s;
 		this.outToServer = new DataOutputStream(s.getOutputStream());
 		this.inFromServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
@@ -39,7 +39,7 @@ class ClientReceiver extends Thread{
         cipher.init(Cipher.DECRYPT_MODE, key);
 
         byte[] decryptedBytes = cipher.doFinal(inputData);
-        String decryptedString = Base64.getEncoder().encodeToString(decryptedBytes);
+        String decryptedString = new String(decryptedBytes);
 
         return decryptedString;
     }
@@ -81,27 +81,35 @@ class ClientReceiver extends Thread{
 
                	if(mLength>=0)
                 {
+					/*
 		            mLength = mLength + 4;  
 		            char[] buf = new char[mLength];                    
 		            inFromServer.read(buf,0,mLength);
 		            String message = new String(buf);
 		            System.out.println("Message received: "+message);
 		            mLength = mLength-4;
+					*/
+					int c = inFromServer.read();
+                      String message = "";
+                      System.out.println(c);
+                      for(int j=0;j<(mLength+2);j++)
+                        message += Character.toString((char)inFromServer.read());
+						System.out.println(message);
 		            int a = message.indexOf('[');
                     int b = message.lastIndexOf(']');
                     if( b-a-1 == mLength)
                     {
-                    	message = message.substring(1,message.length()-1);
+                    	//message = message.substring(1,message.length()-1);
                     	if(isEncrypted)
                     		message = message.substring(1,message.length()-1);
 
-                    	System.out.println("encrsmg " +message);
+                    	System.out.println("encrsmg" +message+":");
                     	System.out.println("privatekey: "+ privateKey);
                     	System.out.println("\n\n\nYYYYYYYOOOOOOO\n\n");
                     	if(isEncrypted)
-                    		message = decrypt(Base64.getDecoder().decode(privateKey),Base64.getDecoder().decode(message));
+                    		message = decrypt(privateKey,Base64.getDecoder().decode(message));
                     	String ret = "RECEIVED ["+senderUserName+"]\n\n";
-						outToServer.writeBytes(ret);
+						outToServer.writeUTF(ret);
 						System.out.println("New Message Received.\n Sender:"+senderUserName +"\nMessage: "+message);
 
                     }
@@ -120,11 +128,8 @@ class ClientReceiver extends Thread{
 				int length = inFromServer.available();
 				byte[] buf = new byte[length];
 				inFromServer.readFully(buf);
-
 				String inp = new String(buf);
-
 				ParserR pr = new ParserR(inp);
-
 				if(!pr.isValid()){
 					String ret = "ERROR 103 Header Incomplete\n\n";
 					outToServer.writeBytes(ret);

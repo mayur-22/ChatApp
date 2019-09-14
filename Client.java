@@ -6,6 +6,7 @@ import java.security.*;
 
 
 class Client{
+	
 
 	public static void main(String[] args) throws Exception{
 		String username;
@@ -18,9 +19,22 @@ class Client{
 	 	//port number = 2200
 	 	Socket sendSocket = new Socket(serverIPAddress,2200);
 	 	System.out.println("Connected...");
-	 	String privateKey = "";
+	 	
 
 	 	int enc=0;
+	 	KeyPairGenerator kgp = KeyPairGenerator.getInstance("RSA");
+		SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN");
+		kgp.initialize(512,random);
+		KeyPair kp = kgp.generateKeyPair();
+		// System.out.println(kp.getPublic() + " " + kp.getPrivate());
+
+		// String publicKey = new String(kp.getPublic().getEncoded());
+		String publicKey = Base64.getEncoder().encodeToString(kp.getPublic().getEncoded());
+		System.out.println("Mypublickey: "+publicKey);
+		byte[] privateKey = kp.getPrivate().getEncoded();
+	 	// byte[] tempB = Base64.getDecoder().decode("ab");
+	 	// String tempS = Base64.getEncoder().encodeToString(tempB);
+	 	// System.out.println(tempS.equals("abcd"));
 
 	 	while(true){
 	 		System.out.print("Please Enter New UserName: ");
@@ -33,17 +47,10 @@ class Client{
 	 		System.out.println("Do u want encryption?");
 	 		enc = sc.nextInt();
 
-	 		if(enc==1){
-	 			KeyPairGenerator kgp = KeyPairGenerator.getInstance("RSA");
-        		SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN");
-	 			kgp.initialize(512,random);
-	 			KeyPair kp = kgp.generateKeyPair();
-	 			// System.out.println(kp.getPublic() + " " + kp.getPrivate());
 
-	 			// String publicKey = new String(kp.getPublic().getEncoded());
-	 			String publicKey = Base64.getEncoder().encodeToString(kp.getPublic().getEncoded());
-	 			System.out.println("Mypublickey: "+publicKey);
-	 			privateKey = Base64.getEncoder().encodeToString(kp.getPrivate().getEncoded());
+
+	 		if(enc==1){
+	 			
 	 			System.out.println("Myprivatekey: "+privateKey);
 	 			
 	 			String sendMsg = "REGISTER TOSEND ["+username+"]\n";
@@ -51,9 +58,9 @@ class Client{
 		 		DataOutputStream outToServer = new DataOutputStream(sendSocket.getOutputStream());
 		 		outToServer.writeBytes(sendMsg);
 		 		sendMsg = "Content-length: [" + publicKey.length() + "]\n";
-	 			sendMsg += "[" + publicKey + "]\n";
+	 			sendMsg += "[" + publicKey + "]";
 	 			System.out.println(sendMsg);
-	 			outToServer.writeUTF(sendMsg);
+	 			outToServer.writeBytes(sendMsg);
 	 		}
 
 	 		//output to server
@@ -102,5 +109,3 @@ class Client{
 	}
 
 }
-
-
