@@ -11,7 +11,7 @@ class Server
 
     public static void main(String[] args) throws Exception{
         Server s = new Server();
-        s.runServer(1);
+        s.runServer(2);
     }
     ConcurrentHashMap<String,Socket> receivingTable;
     ConcurrentHashMap<String,Socket> sendingTable;
@@ -147,6 +147,9 @@ class Server
                   String header = inFromClient.readLine();
                   System.out.println("ServerSender: "+header);
                   int mLength = -1;
+                  int hashLength = -1;
+                  String hashStr = "";
+
                   String destName = "";
                   if(header.startsWith("SEND [") && header.endsWith("]"))
                   {
@@ -240,28 +243,75 @@ class Server
                         Message += Character.toString((char)inFromClient.read());
                       //String k = inFromClient.readLine();
                       System.out.print(Message + "end");
-                              int a = Message.indexOf('[');
-                              int b = Message.lastIndexOf(']');
-                              System.out.println("a " + a + " b " + b);
-                              if(b-a-1 == mLength)
-                              {
-                                  
-                                  String res = "FORWARD ["+ username + "]\nContent-length: ["+mLength+"]\n\n";
-                                  res = res + "["  + Message.substring(a+1,b)+"]";
-                                  if(registered.contains(destName))
-                                  {                                    
-                                  Socket s = receivingTable.get(destName);
-                                  System.out.println(destName + " " + s.getPort() + " " +res);
-                                  
-                                  ServerReceiver recv = new ServerReceiver(s,destName,username,res);
-                                  Thread t = new Thread(recv);
-                                  t.start();
-                                  }
-                              }
-                              else
-                              {
-                                  outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
-                              }
+                      int a = Message.indexOf('[');
+                      int b = Message.lastIndexOf(']');
+                      System.out.println("a " + a + " b " + b);
+
+
+                      if(mode==2){
+                          String headerHash = inFromClient.readLine();
+                          if(headerHash.startsWith("Content-length: [") && headerHash.endsWith("]"))
+                          {
+                             System.out.println("headerHash:"+headerHash);                              
+                             try
+                             {
+                              hashLength = Integer. parseInt(headerHash.substring(headerHash.indexOf('[')+1,headerHash.indexOf(']')));
+                              System.out.println(hashLength);
+                             
+                             }
+                             catch(NumberFormatException e)
+                             {
+                                 System.out.println("Length Field Error \n");
+                                 System.out.println(e.getMessage());
+                             }
+                          }
+
+                          if(hashLength>=0){
+                              int cH = inFromClient.read();
+                              String MessageHash = "";
+                              System.out.println(cH);
+                              for(int k=0;k<(hashLength+2);k++)
+                                MessageHash += Character.toString((char)inFromClient.read());
+                              //String k = inFromClient.readLine();
+                              System.out.print(MessageHash + "end");
+                              int aH = MessageHash.indexOf('[');
+                              int bH = MessageHash.lastIndexOf(']');
+                              System.out.println("aH " + aH + " bH " + bH);
+
+                              if(bH-aH-1==hashLength)
+                                hashStr = MessageHash.substring(aH+1,bH);
+                          }
+
+                      }
+
+
+
+                      if(b-a-1 == mLength)
+                      {
+                          
+                          String res = "FORWARD ["+ username + "]\nContent-length: ["+mLength+"]\n\n";
+                          res = res + "["  + Message.substring(a+1,b)+"]";
+                          if(mode==2){
+                            res +=  "Content-length: ["+hashLength+"]\n\n";
+                            res += "[" + hashStr + "]";
+                            res += "Content-length: ["+keyTable.get(username).length()+"]\n\n";
+                            res += "[" + keyTable.get(username) + "]";
+
+                          }
+                          if(registered.contains(destName))
+                          {                                    
+                          Socket s = receivingTable.get(destName);
+                          System.out.println(destName + " " + s.getPort() + " " +res);
+                          
+                          ServerReceiver recv = new ServerReceiver(s,destName,username,res);
+                          Thread t = new Thread(recv);
+                          t.start();
+                          }
+                      }
+                      else
+                      {
+                          outToClient.writeBytes("ERROR 102 Unable to send\\n\n");
+                      }
                           
                       
                   }

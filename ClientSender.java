@@ -15,6 +15,8 @@ import java.util.Scanner;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.security.MessageDigest;
+import java.math.BigInteger;
 
 import javax.crypto.Cipher;
 
@@ -27,14 +29,17 @@ class ClientSender extends Thread{
 	private DataOutputStream outToServer;
 	private BufferedReader inFromServer;
 	private boolean isEncrypted;
-
+	private byte[] privateKey;
+	private int mode;
 
 	//if b is true then it is receiver;
 	//else it is a sender
-	public ClientSender(Socket s,int enc) throws Exception{
+	public ClientSender(Socket s,int enc,byte[]  privateKey) throws Exception{
 		this.soc = s;
 		this.outToServer = new DataOutputStream(s.getOutputStream());
 		this.inFromServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
+		this.privateKey = privateKey;
+		this.mode = enc;
 		if(enc==0)
 			isEncrypted = false;
 		else
@@ -53,6 +58,19 @@ class ClientSender extends Thread{
             System.out.println("Encoded String: "+encryptedString);
             return encryptedString;
         }
+
+    public static byte[] encryptPvt(byte[] privateKey, byte[] inputData)
+            throws Exception {
+        PrivateKey key = KeyFactory.getInstance("RSA")
+                .generatePrivate(new PKCS8EncodedKeySpec(privateKey));
+
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+
+        byte[] encryptedBytes = cipher.doFinal(inputData);
+
+        return encryptedBytes;
+    }
 
 	@Override
 	public void run(){
@@ -131,13 +149,31 @@ class ClientSender extends Thread{
 				System.out.println("There\n");
 				if(isEncrypted){
 					// System.out.println(Base64.getDecoder().decode(senderPublicKey));
-					System.out.println(message);
+					System.out.println("MessageIMP"+message);
 					byte[] decodedMsg = message.getBytes();
 					message = encrypt(Base64.getDecoder().decode(senderPublicKey),decodedMsg);
 					toSend += "Content-length: [" + message.length() + "]\n\n";
 					toSend += "[" + message + "]";
 				}
-				else{
+				if(mode==2){
+					//assuming message is already encrypted
+					MessageDigest md = MessageDigest.getInstance("SHA-256");
+                    byte[] messageDigest = md.digest(Base64.getDecoder().decode(message));
+                    BigInteger no = new BigInteger(1,messageDigest);
+                    String hashText = no.toString(16);
+                    while (hashText.length() < 32) { 
+                            hashText = "0" + hashText;
+                    }
+                    System.out.println("hashText"+hashText);
+                    byte[] h = Base64.getDecoder().decode(hashText);
+                    byte[] hDash = encryptPvt(this.privateKey,h);
+                    System.out.println("hi");
+                    String hDashStr = Base64.getEncoder().encodeToString(hDash);
+                    toSend += "Content-length: [" + hDashStr.length() + "]\n\n";
+                    toSend += "[" + hDashStr + "]";
+                    System.out.println("\ndDashStr:"+hDashStr);
+				}
+				if(mode==0){
 					toSend += "Content-length: [" + message.length() + "]\n\n";
 					toSend += "[" + message + "]";
 				}

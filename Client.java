@@ -6,7 +6,7 @@ import java.security.*;
 
 
 class Client{
-	
+
 
 	public static void main(String[] args) throws Exception{
 		String username;
@@ -29,7 +29,8 @@ class Client{
 		// System.out.println(kp.getPublic() + " " + kp.getPrivate());
 
 		// String publicKey = new String(kp.getPublic().getEncoded());
-		String publicKey = Base64.getEncoder().encodeToString(kp.getPublic().getEncoded());
+		byte[] publicKey = kp.getPublic().getEncoded();
+		String publicKeyStr = Base64.getEncoder().encodeToString(publicKey);
 		System.out.println("Mypublickey: "+publicKey);
 		byte[] privateKey = kp.getPrivate().getEncoded();
 	 	// byte[] tempB = Base64.getDecoder().decode("ab");
@@ -49,7 +50,7 @@ class Client{
 
 
 
-	 		if(enc==1){
+	 		if(enc==1 || enc==2){
 	 			
 	 			System.out.println("Myprivatekey: "+privateKey);
 	 			
@@ -57,8 +58,8 @@ class Client{
 	 			
 		 		DataOutputStream outToServer = new DataOutputStream(sendSocket.getOutputStream());
 		 		outToServer.writeBytes(sendMsg);
-		 		sendMsg = "Content-length: [" + publicKey.length() + "]\n";
-	 			sendMsg += "[" + publicKey + "]";
+		 		sendMsg = "Content-length: [" + publicKeyStr.length() + "]\n";
+	 			sendMsg += "[" + publicKeyStr + "]";
 	 			System.out.println(sendMsg);
 	 			outToServer.writeBytes(sendMsg);
 	 		}
@@ -96,8 +97,8 @@ class Client{
 
 	 	
 	 	
- 		Thread sen = new ClientSender(sendSocket,enc);
- 		Thread rec = new ClientReceiver(receiveSocket,enc,privateKey);
+ 		Thread sen = new ClientSender(sendSocket,enc,privateKey);
+ 		Thread rec = new ClientReceiver(receiveSocket,enc,privateKey,publicKey);
  		sen.start();
  		rec.start();
 
