@@ -128,6 +128,7 @@ class ClientReceiver extends Thread{
                     	System.out.println("encrsmg" +message+":");
                     	System.out.println("privatekey: "+ privateKey);
                     	System.out.println("\n\n\nYYYYYYYOOOOOOO\n\n");
+                    	String encrypredMsg = new String(message);
                     	if(isEncrypted)
                     		message = decrypt(privateKey,Base64.getDecoder().decode(message));
 
@@ -197,12 +198,14 @@ class ClientReceiver extends Thread{
 			                      if( bK-aK-1 == senderPubKeyLength){
 
 			                      		String senderPubKey = messageKey.substring(1,messageKey.length()-1);
+			                      		System.out.println("Message:"+message);
+			                      		System.out.println("encMs:"+encrypredMsg);
 			                      		System.out.println("senderPubKey:"+senderPubKey);
 			                      		System.out.println("RecHashStr:"+hashStr);
 				                      	byte[] kPubHdash = decryptPub(Base64.getDecoder().decode(senderPubKey),Base64.getDecoder().decode(hashStr));
 
 				                      	MessageDigest md = MessageDigest.getInstance("SHA-256");
-								        byte[] messageDigest = md.digest(Base64.getDecoder().decode(message));
+								        byte[] messageDigest = md.digest(Base64.getDecoder().decode(encrypredMsg));
 								        BigInteger no = new BigInteger(1,messageDigest);
 
 								        String hashText = no.toString(16);

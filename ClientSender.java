@@ -171,6 +171,7 @@ class ClientSender extends Thread{
                     String hDashStr = Base64.getEncoder().encodeToString(hDash);
                     toSend += "Content-length: [" + hDashStr.length() + "]\n\n";
                     toSend += "[" + hDashStr + "]";
+                    System.out.println("\nmsgEncr:"+message);
                     System.out.println("\ndDashStr:"+hDashStr);
 				}
 				if(mode==0){
